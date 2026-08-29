@@ -1,0 +1,22 @@
+{
+    "name": "Studentutu.Unitysimplemcp.Editor",
+    "rootNamespace": "",
+    "references": [
+        "Studentutu.Unitysimplemcp",
+        "Unity.Addressables",
+        "Unity.Addressables.Editor",
+        "Unity.ScriptableBuildPipeline",
+        "Unity.ScriptableBuildPipeline.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

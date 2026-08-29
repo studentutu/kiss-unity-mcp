@@ -1,0 +1,14 @@
+{
+    "name": "Studentutu.Unitysimplemcp.Editor.Tests",
+    "references": [
+        "Studentutu.Unitysimplemcp.Editor",
+        "Studentutu.Unitysimplemcp"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": []
+}

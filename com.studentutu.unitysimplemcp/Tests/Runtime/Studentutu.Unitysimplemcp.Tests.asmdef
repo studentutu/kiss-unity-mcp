@@ -1,0 +1,11 @@
+{
+    "name": "Studentutu.Unitysimplemcp.Tests",
+    "references": [
+        "Studentutu.Unitysimplemcp"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": []
+}

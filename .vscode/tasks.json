@@ -1,0 +1,75 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Fully Compile by Unity",
+			"type": "process",
+			"command": "git",
+			"args": [
+				"-c",
+				"alias.run-bash=!bash",
+				"run-bash",
+				"./CI/bash/rebuildSolutionFromUnityItself.sh"
+			],
+			"options": { "cwd": "${workspaceFolder}" },
+			"group": "build",
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "Compile by Rider MSbuild",
+			"type": "process",
+			"command": "git",
+			"args": [
+				"-c",
+				"alias.run-bash=!bash",
+				"run-bash",
+				"./CI/bash/rebuildSolutionWithRiderMsBuild.sh"
+			],
+			"options": { "cwd": "${workspaceFolder}" },
+			"group": "build",
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "Run Unity Tests",
+			"type": "process",
+			"command": "git",
+			"args": [
+				"-c",
+				"alias.run-bash=!bash",
+				"run-bash",
+				"./CI/bash/runTestsBash.sh"
+			],
+			"options": { "cwd": "${workspaceFolder}" },
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "Compile Unity Shaders",
+			"type": "process",
+			"command": "git",
+			"args": [
+				"-c",
+				"alias.run-bash=!bash",
+				"run-bash",
+				"./CI/bash/compileShaders.sh"
+			],
+			"options": { "cwd": "${workspaceFolder}" },
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "Parse Unity Tests",
+			"type": "process",
+			"command": "git",
+			"args": [
+				"-c",
+				"alias.run-bash=!bash",
+				"run-bash",
+				"./CI/bash/parseTestErrors.sh"
+			],
+			"options": { "cwd": "${workspaceFolder}" },
+			"group": "build",
+			"problemMatcher": []
+		}
+	]
+}
