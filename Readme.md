@@ -1,39 +1,103 @@
-# Simple Unity MCP
+# Unity Simple MCP
 
-Editor-side tools for a headless, agent-friendly Unity workflow. The package is
-the Unity boundary: reusable Bash orchestration stays in the consumer
-repository's `CI/bash` directory and calls only stable, fully qualified methods.
+Unity Simple MCP is a local Codex plugin that installs the bundled
+`com.studentutu.unitysimplemcp` package into a Unity project as an embedded
+package. Setup is explicit, project-scoped, and idempotent. It does not launch
+Unity or silently replace an existing package.
+
+The plugin combines a narrow setup skill with a local MCP server. The Unity
+package remains the editor-side boundary for compile, test, shader, and utility
+entry points.
+
+## Repository layout
+
+```text
+.codex-plugin/plugin.json              Codex plugin manifest
+.mcp.json                              Bundled local MCP server configuration
+skills/unity-simple-mcp-setup/         One-time setup workflow
+scripts/mcp-server.mjs                 Dependency-free stdio MCP server
+scripts/setup-unity-project.mjs        Manual setup entry point
+scripts/unity-project.mjs              Setup and inspection implementation
+scripts/validate-plugin.mjs            Dependency-free plugin validator
+com.studentutu.unitysimplemcp/         Embedded Unity package source
+CI/bash/                               Authoritative Unity verification scripts
+```
 
 ## Requirements
 
-- Unity 2023.1 or newer (required by Addressables 2.9.1)
-- Unity Test Framework for the included package tests
-- Addressables and Scriptable Build Pipeline (declared package dependencies) for
-  the cache-cleaning editor utilities
+- A local Codex host with this plugin installed and enabled
+- Node.js 18 or newer available as `node` for the bundled MCP server
+- Unity 2023.1 or newer; the exact project version is declared in
+  `ProjectSettings/ProjectVersion.txt`
+- Git and Bash for the repository's Unity CI scripts
 
-See the consumer repository's `CI/RunUnityTestsReadme.md` for command-line use
-and environment overrides.
+## One-time project setup
 
-## Optional (quality of life)
+Ask Codex to set up Unity Simple MCP in a specific Unity project. The plugin
+first inspects the project, then calls the approval-gated setup tool only if the
+package is absent.
 
-- VsCode as this repository provides manual tasks to run the actual tools from the `.vscode/tasks.json`, handy to for manual check/debugging/diagnostics
+The manual equivalent is:
 
-## Tool reference
+```text
+node scripts/setup-unity-project.mjs <path-to-unity-project>
+```
 
-Run commands from the repository root. Direct Bash and the matching VS Code task
-execute the same script. VS Code uses the portable transport
-`git -c alias.run-bash=!bash run-bash <script>` so Git for Windows selects its
-bundled Bash without a hard-coded installation path.
+Setup requires `Assets/`, `Packages/`, and
+`ProjectSettings/ProjectVersion.txt`. It copies the package to:
 
-| Intent | Bash command | Cost and use | Evidence |
-|---|---|---|---|
-| Quick C# compile | `bash ./CI/bash/rebuildSolutionWithRiderMsBuild.sh` | Fast. Use only when the generated solution is current and no `.cs`, asmdef, package, shader, or asset was added/removed. | `CI/RiderMsBuild.log`, `CI/CompileErrorsAfterUnityRun.txt` |
-| Long Unity compile/import | `bash ./CI/bash/rebuildSolutionFromUnityItself.sh` | Authoritative after new/deleted script/asmdef/package/asset changes. Regenerates IDE files. Close this project's interactive Unity editor first. | `CI/UnityCompile.log`, `CI/CompileErrorsAfterUnityRun.txt`, `PROJECT_FILES_SYNCED` marker |
-| Test run | `bash ./CI/bash/runTestsBash.sh` | Launches Unity EditMode tests and immediately parses the fresh result. Close this project's editor first. | `CI/UnityTests.log`, `CI/CITestOutput.xml`, terminal summary |
-| Test parse only | `bash ./CI/bash/parseTestErrors.sh` | Fast; does not launch Unity. Re-checks the most recent test log/XML and prints failed test details. | Reads `CI/UnityTests.log` and `CI/CITestOutput.xml`; updates `CI/CompileErrorsAfterUnityRun.txt` |
-| Long shader compile | `bash ./CI/bash/compileShaders.sh` | Reimports and validates every project shader. Use after shader/HLSL changes. Close this project's editor first. | `CI/UnityShaders.log`, `CI/ShaderCompileErrors.txt`, `SHADER_COMPILATION_PASSED` marker |
+```text
+<unity-project>/Packages/com.studentutu.unitysimplemcp
+```
 
-Exit codes are part of the API: `0` means verified success, `1` means tool,
-compile, log, or infrastructure failure, and `2` means failed/inconclusive tests.
-Never report success from terminal appearance alone. Generated CI artifacts are
-ignored by Git and must be fresh for the current process invocation.
+It also records the verified source digest in:
+
+```text
+<unity-project>/ProjectSettings/SimpleUnityMcpSetup.json
+```
+
+Running setup again against the same package is a no-op. If a different file or
+package already occupies the destination, setup fails without modifying it.
+Replacement is intentionally outside the MCP tool and requires an explicit
+manual command:
+
+```text
+node scripts/setup-unity-project.mjs <path-to-unity-project> --replace
+```
+
+Use `--dry-run` to validate without writing.
+
+## Unity verification
+
+Setup itself never starts Unity. Before any later Unity-backed command, resolve
+the exact editor version required by the target project's
+`ProjectSettings/ProjectVersion.txt`; never substitute another installed
+version. Close any interactive editor holding the same project lock.
+
+The repository's authoritative entry points are:
+
+| Intent | Command |
+| --- | --- |
+| Compile/import and regenerate project files | `bash ./CI/bash/rebuildSolutionFromUnityItself.sh` |
+| Fast C# follow-up compile | `bash ./CI/bash/rebuildSolutionWithRiderMsBuild.sh` |
+| EditMode tests | `bash ./CI/bash/runTestsBash.sh` |
+| Test-result parse only | `bash ./CI/bash/parseTestErrors.sh` |
+| Shader reimport and validation | `bash ./CI/bash/compileShaders.sh` |
+
+Set `UNITY_PROJECT_PATH` when the target project is not this repository's
+default `UnityProj` layout. Full logs and explicit completion markers are the
+source of truth; a zero-looking terminal transcript alone is not success. See
+`CI/RunUnityTestsReadme.md` for artifacts, overrides, and exit-code semantics.
+
+## Plugin development
+
+Validate the complete plugin before committing:
+
+```text
+node scripts/validate-plugin.mjs
+```
+
+The validator, setup workflow, and MCP server use only Node built-ins. There are
+no external runtime package dependencies. Test the MCP server with JSON-RPC
+messages over standard input; protocol output is written only to standard output
+and diagnostics only to standard error.

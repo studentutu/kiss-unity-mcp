@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "unity_simple_mcp": {
+      "command": "node",
+      "args": [
+        "./scripts/mcp-server.mjs"
+      ],
+      "cwd": ".",
+      "enabled": true,
+      "default_tools_approval_mode": "prompt",
+      "tools": {
+        "inspect_unity_project": {
+          "approval_mode": "approve"
+        },
+        "setup_unity_project": {
+          "approval_mode": "prompt"
+        }
+      },
+      "env_vars": [
+        "PATH"
+      ],
+      "startup_timeout_sec": 10,
+      "tool_timeout_sec": 120
+    }
+  }
+}

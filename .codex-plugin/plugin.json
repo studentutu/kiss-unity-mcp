@@ -1,0 +1,37 @@
+{
+  "name": "unity-simple-mcp",
+  "version": "0.5.0",
+  "description": "Set up the bundled Unity editor automation package in a local Unity project.",
+  "author": {
+    "name": "Roman",
+    "email": "studentutu@email.com",
+    "url": "https://github.com/studentutu"
+  },
+  "keywords": [
+    "unity",
+    "game-development",
+    "fast-compile",
+    "testing",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Unity Simple MCP",
+    "shortDescription": "Install local Unity editor automation once.",
+    "longDescription": "Inspect a Unity project and install the bundled com.studentutu.unitysimplemcp package as a local embedded package.",
+    "developerName": "Roman",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Local"
+    ],
+    "defaultPrompt": [
+      "Check whether Unity Simple MCP is set up here.",
+      "Set up Unity Simple MCP in this Unity project.",
+      "Inspect this project's Unity Simple MCP package."
+    ],
+    "brandColor": "#222C37"
+  }
+}

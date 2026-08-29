@@ -1,8 +1,8 @@
 # Simple Unity MCP
 
 Editor-side tools for a headless, agent-friendly Unity workflow. The package is
-the Unity boundary: reusable Bash orchestration stays in the consumer
-repository's `CI/bash` directory and calls only stable, fully qualified methods.
+the Unity boundary; filesystem setup and process orchestration stay outside the
+package and call only stable, fully qualified editor methods.
 
 ## CI execute methods
 
@@ -27,5 +27,8 @@ consumer repository path or a locally installed Unity/Rider version.
 - Addressables and Scriptable Build Pipeline (declared package dependencies) for
   the cache-cleaning editor utilities
 
-See the consumer repository's `CI/RunUnityTestsReadme.md` for command-line use
-and environment overrides.
+When installed through the Unity Simple MCP Codex plugin, setup copies only this
+package into the consumer project's `Packages/` directory. It does not copy CI
+wrappers or alter `Packages/manifest.json`. Use the plugin repository's
+`CI/RunUnityTestsReadme.md` or the consumer repository's equivalent wrappers for
+command-line use and environment overrides.
