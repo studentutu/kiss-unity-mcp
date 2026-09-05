@@ -23,7 +23,7 @@ tool_call() {
         *) fail 'dry_run must be boolean';;
       esac;;
     unity_doctor) action=doctor;;
-    unity_import) action=import;;
+    unity_import) action=unity-import-long-compile;;
     unity_build) action=build;;
     unity_tests) action=tests;;
     unity_shaders) action=shaders;;

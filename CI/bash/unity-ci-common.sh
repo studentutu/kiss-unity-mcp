@@ -89,7 +89,7 @@ resolve_solution() {
     printf '%s\n' "$configured"; return
   fi
   shopt -s nullglob; candidates=("$UNITY_PROJECT_PATH"/*.sln); shopt -u nullglob
-  (( ${#candidates[@]} == 1 )) || fail "Expected one .sln in $UNITY_PROJECT_PATH; found ${#candidates[@]}. Run import or set UNITY_SOLUTION_PATH in $CONFIG_PATH."
+  (( ${#candidates[@]} == 1 )) || fail "Expected one .sln in $UNITY_PROJECT_PATH; found ${#candidates[@]}. Run unity-import-long-compile or set UNITY_SOLUTION_PATH in $CONFIG_PATH."
   printf '%s\n' "${candidates[0]}"
 }
 # Existing C# contents may change for the fast path; file names and all other
@@ -101,7 +101,7 @@ project_fingerprint() (
   printf '%s\n' "$(unity_version)"
   for folder in Assets Packages ProjectSettings Library/PackageCache; do
     [[ -d "$folder" ]] || continue
-    [[ -z "$(find "$folder" -type l -print)" ]] || fail "Fast-build snapshots do not support links under $folder. Run import for authoritative verification."
+    [[ -z "$(find "$folder" -type l -print)" ]] || fail "Fast-build snapshots do not support links under $folder. Run unity-import-long-compile for authoritative verification."
     find "$folder" -type f ! -path 'Packages/.kissunitymcp-*/*' | LC_ALL=C sort
     find "$folder" -type f ! -name '*.cs' ! -path 'Packages/.kissunitymcp-*/*' | LC_ALL=C sort | \
       ROOT="$native_project" awk '{print ENVIRON["ROOT"] "/" $0}' | git hash-object --no-filters --stdin-paths || exit 1
@@ -114,9 +114,9 @@ write_import_snapshot() {
 }
 require_import_snapshot() {
   local current
-  [[ -s "$CI_OUTPUT_DIR/ImportSnapshot.txt" ]] || fail "No verified Unity import snapshot. Run scripts/unity.sh import first."
+  [[ -s "$CI_OUTPUT_DIR/ImportSnapshot.txt" ]] || fail "No verified Unity import snapshot. Run scripts/unity.sh unity-import-long-compile first."
   current="$(project_fingerprint | git hash-object --stdin)"
-  [[ "$current" == "$(cat "$CI_OUTPUT_DIR/ImportSnapshot.txt")" ]] || fail "Unity inputs or generated projects changed. Run scripts/unity.sh import before fast MSBuild. Full log: $CI_OUTPUT_DIR/UnityCompile.log"
+  [[ "$current" == "$(cat "$CI_OUTPUT_DIR/ImportSnapshot.txt")" ]] || fail "Unity inputs or generated projects changed. Run scripts/unity.sh unity-import-long-compile before fast MSBuild. Full log: $CI_OUTPUT_DIR/UnityCompile.log"
 }
 acquire_run_lock() {
   mkdir -p "$CI_OUTPUT_DIR"

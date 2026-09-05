@@ -14,7 +14,7 @@ non-task exception; all skills include manual usage, prerequisites, and verifica
 | Skill | VS Code task | Purpose |
 | --- | --- | --- |
 | [Doctor](kiss-unity-mcp-doctor/SKILL.md) | kiss-unity-mcp: Check tool paths | Resolve exact Unity and Rider paths without launching |
-| [Import](kiss-unity-mcp-import/SKILL.md) | kiss-unity-mcp: Import and generate solution (long-compile) | Authoritative import, compile, IDE generation |
+| [Import](kiss-unity-mcp-import/SKILL.md) | kiss-unity-mcp: unity-import-long-compile | Authoritative import, compile, IDE generation |
 | [Fast build](kiss-unity-mcp-build/SKILL.md) | kiss-unity-mcp: Fast MSBuild | Incremental existing-C# follow-up |
 | [Tests](kiss-unity-mcp-tests/SKILL.md) | kiss-unity-mcp: EditMode tests | Execute tests and verify fresh log/XML |
 | [Run parsetests](kiss-unity-mcp-run-parsetests/SKILL.md) | kiss-unity-mcp: Parse test results | Validate saved log/XML without launching Unity |

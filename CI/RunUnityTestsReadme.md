@@ -13,7 +13,7 @@ From the plugin checkout:
 
 ```bash
 bash scripts/unity.sh doctor /path/to/project
-bash scripts/unity.sh import /path/to/project
+bash scripts/unity.sh unity-import-long-compile /path/to/project
 bash scripts/unity.sh build /path/to/project
 bash scripts/unity.sh tests /path/to/project
 bash scripts/unity.sh shaders /path/to/project

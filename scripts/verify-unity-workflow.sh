@@ -65,7 +65,7 @@ public class SimpleMcpProbeTests { [Test] public void Verification() { Assert.Is
 CS
 printf 'good\n' > "$probe/import.simplemcptest"
 printf 'Shader "Hidden/SimpleMcpVerification" { SubShader { Pass {} } }\n' > "$probe/Probe.shader"
-step 0 01-import-green import
+step 0 01-import-green unity-import-long-compile
 if [[ "$mode" == all ]]; then
 step 0 02-msbuild-green build
 printf 'public static class SimpleMcpCompilationProbe { public static int Value => UndefinedSymbol; }\n' > "$probe/CompilationProbe.cs"
@@ -73,9 +73,9 @@ step 1 03-msbuild-red build
 printf 'public static class SimpleMcpCompilationProbe { public static int Value => 2; }\n' > "$probe/CompilationProbe.cs"
 step 0 04-msbuild-restored build
 printf 'broken\n' > "$probe/import.simplemcptest"
-step 1 05-import-red import
+step 1 05-import-red unity-import-long-compile
 printf 'restored\n' > "$probe/import.simplemcptest"
-step 0 06-import-restored import
+step 0 06-import-restored unity-import-long-compile
 fi
 if [[ "$mode" != --shaders-only ]]; then
 step 0 07-tests-green tests
@@ -92,6 +92,6 @@ printf 'Shader "Hidden/SimpleMcpVerification" { SubShader { Pass {} } }\n' > "$p
 step 0 11-shaders-restored shaders
 cleanup
 trap - EXIT
-step 0 12-final-import import
+step 0 12-final-import unity-import-long-compile
 step 0 13-final-msbuild build
 printf '\nUNITY_WORKFLOW_VERIFIED mode=%s\nEvidence: %s\n' "$mode" "$evidence"

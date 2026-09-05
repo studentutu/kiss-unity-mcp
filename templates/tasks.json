@@ -17,7 +17,7 @@
       "problemMatcher": []
     },
     {
-      "label": "kiss-unity-mcp: Import and generate solution (long-compile)",
+      "label": "kiss-unity-mcp: unity-import-long-compile",
       "type": "process",
       "command": "git",
       "args": [
@@ -25,7 +25,7 @@
         "alias.unity-bash=!bash",
         "unity-bash",
         "${workspaceFolder}/.kissunitymcp/scripts/unity.sh",
-        "import",
+        "unity-import-long-compile",
         "${workspaceFolder}"
       ],
       "group": "build",

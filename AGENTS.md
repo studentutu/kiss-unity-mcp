@@ -34,7 +34,7 @@ copy before swapping it into the consumer project's `Packages/` directory.
   Keep installed filesystem paths and the Unity package identity stable.
 - MCP server: `scripts/mcp-server.sh` (thin stdio adapter)
 - Setup CLI: `scripts/setup-unity-project.sh`
-- Manual API: `scripts/unity.sh <doctor|import|build|tests|shaders|parse-tests> <project>`
+- Manual API: `scripts/unity.sh <doctor|unity-import-long-compile|build|tests|shaders|parse-tests> <project>`
 - Plugin validation: `scripts/validate-plugin.sh`
 - Workflow regression tests: `scripts/test-workflow.sh`
 - End-user task skills and manual workflow: `skills/README.md`, `skills/manual-workflow.md`

@@ -7,9 +7,10 @@ are in `<plugin-root>/com.studentutu.kissunitymcp/README.md`.
 
 These are the `kiss-unity-mcp` skills. Select MCP tools from the
 `kiss-unity-mcp` server; `unity-mcp` / `unity-cli` are separate integrations.
-Tool names such as `unity_import` and all Bash commands retain their existing
-names. The installed `.kissunitymcp/` directory and
-`kissunitymcp.code-workspace` filename are stable filesystem paths.
+The `unity_import` MCP tool calls `unity.sh unity-import-long-compile`, matching
+the **kiss-unity-mcp: unity-import-long-compile** task. The installed
+`.kissunitymcp/` directory and `kissunitymcp.code-workspace` filename are stable
+filesystem paths.
 
 ## Resolve paths, not the current working directory
 

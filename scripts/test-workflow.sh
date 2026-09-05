@@ -141,6 +141,29 @@ printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"s
 bash "$root/scripts/mcp-server.sh" < "$work/requests" > "$work/response"
 [[ "$(json_get "$work/response" /result/isError)" == true ]] || fail 'MCP accepted invalid path type'
 
+# Verify the renamed CLI and stable MCP tool reach the same wrapper and preserve
+# success/failure. Stub only the Unity boundary in the isolated plugin copy.
+cat > "$validation_root/CI/bash/rebuildSolutionFromUnityItself.sh" <<'SH'
+#!/usr/bin/env bash
+printf 'IMPORT_DISPATCH:%s\n' "$UNITY_PROJECT_PATH"
+exit "${IMPORT_STUB_EXIT:-0}"
+SH
+expect_exit 0 bash "$validation_root/scripts/unity.sh" help
+grep -qF 'unity-import-long-compile' "$work/last.log" || fail 'CLI help missed renamed action'
+expect_exit 1 bash "$validation_root/scripts/unity.sh" import "$project2"
+grep -qF 'Unknown action: import.' "$work/last.log" || fail 'Former import action still accepted'
+for import_status in 0 1 0; do
+  export IMPORT_STUB_EXIT="$import_status"
+  expect_exit "$import_status" bash "$validation_root/scripts/unity.sh" unity-import-long-compile "$project2"
+  grep -qxF "IMPORT_DISPATCH:$project2" "$work/last.log" || fail 'Renamed CLI did not reach import wrapper'
+  printf '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"unity_import","arguments":{"project_path":%s}}}\n' "$(quote "$project2")" > "$work/requests"
+  bash "$validation_root/scripts/mcp-server.sh" < "$work/requests" > "$work/response"
+  import_error=false; (( import_status==0 )) || import_error=true
+  [[ "$(json_get "$work/response" /result/isError)" == "$import_error" &&
+     "$(json_get "$work/response" /result/content/0/text)" == "IMPORT_DISPATCH:$project2" ]] || fail 'MCP import dispatch or failure propagation changed'
+done
+unset IMPORT_STUB_EXIT
+
 # Exercise the real resolver for each platform without launching a process.
 export UNITY_PROJECT_PATH="$project2"
 source "$root/CI/bash/unity-ci-common.sh"
@@ -214,14 +237,21 @@ for task_file in "$project/.vscode/tasks.json" "$project2/.vscode/kissunitymcp.c
     "$root/.vscode/tasks.json") task_project="$project2"; workspace_folder="$root";;
   esac
   json_get "$task_file" '' validate || fail "Invalid manual task JSON: $task_file"
-  task_index=0; parse_task=''
+  task_index=0; parse_task=''; import_task=''
   while task_label="$(json_get "$task_file" "$task_list/$task_index/label" 2>/dev/null)"; do
     if [[ "$task_label" == 'kiss-unity-mcp: Parse test results' ]]; then
       [[ -z "$parse_task" ]] || fail "Duplicate parse task: $task_file"
       parse_task="$task_list/$task_index"
     fi
+    if [[ "$task_label" == 'kiss-unity-mcp: unity-import-long-compile' ]]; then
+      [[ -z "$import_task" ]] || fail "Duplicate import task: $task_file"
+      import_task="$task_list/$task_index"
+    fi
     task_index=$((task_index+1))
   done
+  [[ -n "$import_task" &&
+     "$(json_get "$task_file" "$import_task/args/4")" == unity-import-long-compile &&
+     "$(json_get "$task_file" "$import_task/args/3")" == '${workspaceFolder}/'*scripts/unity.sh ]] || fail "Missing or misrouted renamed import task: $task_file"
   [[ -n "$parse_task" ]] || fail "Missing parse task: $task_file"
   [[ "$(json_get "$task_file" "$parse_task/type")" == process &&
      "$(json_get "$task_file" "$parse_task/command")" == git &&

@@ -96,7 +96,7 @@ The equivalent commands from the Unity project root (after setup) are:
 
 ```bash
 bash .kissunitymcp/scripts/unity.sh doctor
-bash .kissunitymcp/scripts/unity.sh import
+bash .kissunitymcp/scripts/unity.sh unity-import-long-compile
 bash .kissunitymcp/scripts/unity.sh build
 bash .kissunitymcp/scripts/unity.sh tests
 bash .kissunitymcp/scripts/unity.sh shaders
@@ -111,7 +111,7 @@ Open the project in VS Code and choose **Terminal > Run Task > kiss-unity-mcp**.
 
 If the project already had tasks, open its generated
 `.vscode/kissunitymcp.code-workspace` to access the additional tasks (copy them to your `.vscode/tasks.json` in case you don't want to override it, but need them).
-Use **Check tool paths**, **Import and generate solution**, then **Fast MSBuild**.
+Use **Check tool paths**, **unity-import-long-compile**, then **Fast MSBuild**.
 Use **EditMode tests** to run all tests, or **Parse test results** to inspect
 existing NUnit XML and the matching Unity log without launching Unity.
 **Open tool settings** opens the one configuration file. It uses VS Code's `code`
@@ -122,8 +122,11 @@ installed scripts do not depend on the marketplace cache or this checkout.
 Windows tasks launch through Git's temporary Bash alias to avoid the Windows WSL
 `bash.exe` launcher. `git` must be on PATH. Use Git Bash, not WSL, for Windows Unity.
 
-For already set projects, deliberately merge the new task from the templates
-into their existing tasks/workspace. Verify that setup command was successful and that user can run task from within the bash shell and reach unity compilation.
+The CLI action is `unity-import-long-compile`; the former `import` action is no
+longer accepted. The MCP tool remains `unity_import`. Existing projects retain
+their installed scripts and tasks until explicitly updated. When updating, merge
+the renamed task label and action into existing tasks/workspaces together with
+the dispatcher update. Verify the command from Bash against the target project.
 
 ### Agents and end-user task skills
 

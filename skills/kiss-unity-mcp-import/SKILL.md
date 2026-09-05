@@ -8,7 +8,7 @@ description: Use kiss-unity-mcp to run authoritative headless Unity import and C
 Read `<plugin-root>/skills/manual-workflow.md` first; resolve `PROJECT_PATH` and
 `TOOL_ROOT`. This is authoritative Unity verification, not the fast C# check.
 
-Task: kiss-unity-mcp: Import and generate solution (long-compile)
+Task: kiss-unity-mcp: unity-import-long-compile
 
 ## Procedure
 
@@ -25,10 +25,10 @@ Task: kiss-unity-mcp: Import and generate solution (long-compile)
 ## Manual usage
 
 ```bash
-bash "$TOOL_ROOT/scripts/unity.sh" import "$PROJECT_PATH"
+bash "$TOOL_ROOT/scripts/unity.sh" unity-import-long-compile "$PROJECT_PATH"
 ```
 
-VS Code: **kiss-unity-mcp: Import and generate solution (long-compile)**.
+VS Code: **kiss-unity-mcp: unity-import-long-compile**.
 MCP server `kiss-unity-mcp`: `unity_import` with absolute `project_path`.
 
 ## Verification
