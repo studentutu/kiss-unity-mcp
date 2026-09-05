@@ -8,7 +8,7 @@
     "version": "2.0.0",
     "tasks": [
       {
-        "label": "Unity MCP: Check tool paths",
+        "label": "kiss-unity-mcp: Check tool paths",
         "type": "process",
         "command": "git",
         "args": [
@@ -23,7 +23,7 @@
         "problemMatcher": []
       },
       {
-        "label": "Unity MCP: Import and generate solution",
+        "label": "kiss-unity-mcp: Import and generate solution",
         "type": "process",
         "command": "git",
         "args": [
@@ -38,7 +38,7 @@
         "problemMatcher": "$msCompile"
       },
       {
-        "label": "Unity MCP: Fast MSBuild",
+        "label": "kiss-unity-mcp: Fast MSBuild",
         "type": "process",
         "command": "git",
         "args": [
@@ -53,7 +53,7 @@
         "problemMatcher": "$msCompile"
       },
       {
-        "label": "Unity MCP: EditMode tests",
+        "label": "kiss-unity-mcp: EditMode tests",
         "type": "process",
         "command": "git",
         "args": [
@@ -68,7 +68,7 @@
         "problemMatcher": []
       },
       {
-        "label": "Unity MCP: Parse test results",
+        "label": "kiss-unity-mcp: Parse test results",
         "type": "process",
         "command": "git",
         "args": [
@@ -83,7 +83,7 @@
         "problemMatcher": []
       },
       {
-        "label": "Unity MCP: Compile shaders",
+        "label": "kiss-unity-mcp: Compile shaders",
         "type": "process",
         "command": "git",
         "args": [
@@ -98,7 +98,7 @@
         "problemMatcher": []
       },
       {
-        "label": "Unity MCP: Open tool settings",
+        "label": "kiss-unity-mcp: Open tool settings",
         "type": "process",
         "command": "code",
         "args": [

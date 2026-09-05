@@ -25,8 +25,8 @@ and results default to `<project>/Logs/SimpleUnityMcp`; `CI_OUTPUT_DIR` override
 that location. `UNITY_TEST_PLATFORM` defaults to EditMode. Keep generated logs,
 XML, snapshots and diagnostics out of source control.
 
-**Unity MCP: Parse test results** and the
-[run-parsetests skill](../skills/unity-simple-mcp-run-parsetests/SKILL.md) both use
+**kiss-unity-mcp: Parse test results** and the
+[run-parsetests skill](../skills/kiss-unity-mcp-run-parsetests/SKILL.md) both use
 the dispatcher's `parse-tests` action. This inspects existing CITestOutput.xml and
 UnityTests.log and overwrites extracted diagnostics; it never launches Unity or
 MSBuild. Pass `--test-results` and `--unity-log` after the project argument for an

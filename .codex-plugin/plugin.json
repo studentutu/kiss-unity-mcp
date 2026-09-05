@@ -1,5 +1,5 @@
 {
-  "name": "unity-simple-mcp",
+  "name": "kiss-unity-mcp",
   "version": "0.5.0",
   "description": "Bash-only Unity setup, verified import, fast Rider/MSBuild compilation, tests and manual VS Code actions.",
   "author": {
@@ -19,7 +19,7 @@
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {
-    "displayName": "Unity Simple MCP",
+    "displayName": "kiss-unity-mcp",
     "shortDescription": "Unity and Rider build tools, with Bash-only setup.",
     "longDescription": "Install the embedded Unity package and standalone Bash tools once. Select Unity and Rider per project, run manual VS Code actions or MCP tools, and verify complete editor and MSBuild logs.",
     "developerName": "Roman",
@@ -30,9 +30,9 @@
       "Local"
     ],
     "defaultPrompt": [
-      "Check whether Unity Simple MCP is set up here.",
-      "Set up Unity Simple MCP in this Unity project.",
-      "Inspect this project's Unity Simple MCP package."
+      "Check whether kiss-unity-mcp is set up here.",
+      "Set up kiss-unity-mcp in this Unity project.",
+      "Inspect this project's kiss-unity-mcp package."
     ],
     "brandColor": "#222C37"
   }

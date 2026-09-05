@@ -5,7 +5,7 @@
   },
   "plugins": [
     {
-      "name": "unity-simple-mcp",
+      "name": "kiss-unity-mcp",
       "source": {
         "source": "url",
         "url": "https://github.com/studentutu/unity-simple-mcp.git",

@@ -5,6 +5,12 @@ Read this before following a command skill. The repository manual is
 `<plugin-root>/CI/RunUnityTestsReadme.md`, and editor capabilities and dependencies
 are in `<plugin-root>/com.studentutu.unitysimplemcp/README.md`.
 
+These are the `kiss-unity-mcp` skills. Select MCP tools from the
+`kiss-unity-mcp` server; `unity-mcp` / `unity-cli` are separate integrations.
+Tool names such as `unity_import` and all Bash commands retain their existing
+names. The installed `.unity-simple-mcp/` directory and
+`unity-simple-mcp.code-workspace` filename are stable filesystem paths.
+
 ## Resolve paths, not the current working directory
 
 `<plugin-root>` is the absolute plugin checkout/installation directory, two
@@ -13,7 +19,7 @@ project, not the plugin repository. Replace the example paths with actual absolu
 paths before running commands in Bash 3.2+ or Git Bash:
 
 ```bash
-PLUGIN_ROOT="/absolute/path/to/unity-simple-mcp"
+PLUGIN_ROOT="/absolute/path/to/kiss-unity-mcp"
 PROJECT_PATH="/absolute/path/to/Unity project"
 TOOL_ROOT="$PROJECT_PATH/.unity-simple-mcp"
 ```
@@ -28,7 +34,7 @@ run two verification operations for one project concurrently.
 
 ## Setup is separate
 
-Use `<plugin-root>/skills/unity-simple-mcp-setup/SKILL.md` for inspection and
+Use `<plugin-root>/skills/kiss-unity-mcp-setup/SKILL.md` for inspection and
 explicitly requested installation; the manual commands are also in
 `<plugin-root>/Readme.md`. Do not install, replace, or rerun setup as a routine
 preamble to import, build, or tests.
@@ -82,7 +88,7 @@ lock; wait for test/import operations to finish writing the selected artifacts.
 ## Manual VS Code, CI, SSH, and headless use
 
 Open `<project>/.vscode/unity-simple-mcp.code-workspace` and use **Terminal > Run
-Task > Unity MCP**. Existing `<project>/.vscode/tasks.json` is preserved; use the
+Task > kiss-unity-mcp**. Existing `<project>/.vscode/tasks.json` is preserved; use the
 dedicated workspace or deliberately merge selected tasks yourself. **Open tool
 settings** needs the `code` CLI; otherwise open tools.env in the Explorer.
 
@@ -91,8 +97,8 @@ where available; opening settings and parse-only have no MCP tool. CI, SSH,
 containers, and custom installations use explicit paths and the existing licensed toolchain;
 these scripts do not install a compiler, runtime, or license.
 
-**Unity MCP: Parse test results** uses `unity.sh parse-tests`, not test execution.
-Follow `<plugin-root>/skills/unity-simple-mcp-run-parsetests/SKILL.md` to inspect
+**kiss-unity-mcp: Parse test results** uses `unity.sh parse-tests`, not test execution.
+Follow `<plugin-root>/skills/kiss-unity-mcp-run-parsetests/SKILL.md` to inspect
 saved log/XML pairs. It overwrites extracted diagnostics but does not rerun tests.
 
 ## Evidence and reporting

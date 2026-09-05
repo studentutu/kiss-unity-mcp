@@ -1,3 +1,0 @@
-interface:
-  display_name: "Unity MCP Tests"
-  short_description: "Run tests with fresh NUnit and editor evidence"

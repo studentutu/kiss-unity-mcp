@@ -1,3 +1,0 @@
-interface:
-  display_name: "Unity MCP Shader Check"
-  short_description: "Check imported shaders and full Unity logs"

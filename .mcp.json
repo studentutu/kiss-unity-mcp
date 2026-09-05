@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "unity_simple_mcp": {
+    "kiss-unity-mcp": {
       "command": "git",
       "args": [
         "-c",

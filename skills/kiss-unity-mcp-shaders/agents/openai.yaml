@@ -1,0 +1,3 @@
+interface:
+  display_name: "kiss-unity-mcp Shader Check"
+  short_description: "Check imported shaders and full Unity logs"

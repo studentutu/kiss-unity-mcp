@@ -1,0 +1,3 @@
+interface:
+  display_name: "kiss-unity-mcp Tool Settings"
+  short_description: "Open and edit per-project Unity and Rider paths"

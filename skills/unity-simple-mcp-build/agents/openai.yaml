@@ -1,3 +1,0 @@
-interface:
-  display_name: "Unity MCP Fast Build"
-  short_description: "Verify existing C# edits with Rider/MSBuild"

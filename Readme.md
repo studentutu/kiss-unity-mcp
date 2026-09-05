@@ -1,6 +1,11 @@
-# Unity Simple MCP
+# kiss-unity-mcp
 
-Separate marketplace that contains `unity-simple-mcp` plugin.
+Separate marketplace that contains `kiss-unity-mcp` plugin.
+
+Use `kiss-unity-mcp` for the plugin and MCP server, `kiss-unity-mcp-*` for
+skills (for example, `$kiss-unity-mcp-import`), and `kiss-unity-mcp:` for VS Code
+tasks. This is a separate integration from `unity-mcp` / `unity-cli`.
+MCP tool names such as `unity_import` belong to the `kiss-unity-mcp` server.
 
 Editor-side tools for a headless, agent-friendly Unity workflow. The package is the Unity boundary: reusable Bash orchestration stays in the consumer repository's CI/bash directory and calls only stable, fully qualified methods.
 
@@ -61,7 +66,7 @@ Setup never starts Unity or modifies `Packages/manifest.json`.
 
 ## Manual use without an agent
 
-Open the project in VS Code and choose **Terminal > Run Task > Unity MCP**.
+Open the project in VS Code and choose **Terminal > Run Task > kiss-unity-mcp**.
 If the project already had tasks, open its generated
 `.vscode/unity-simple-mcp.code-workspace` to access the additional tasks (copy them to your `.vscode/tasks.json` in case you don't want to override it, but need them).
 Use **Check tool paths**, **Import and generate solution**, then **Fast MSBuild**.
@@ -162,12 +167,12 @@ is a failure. `FAIL_ON_SKIPPED=1` also rejects skipped tests.
 The [skill catalog](skills/README.md) exposes the seven actions in
 `templates/tasks.json`: tool-path checks, import, fast MSBuild, EditMode tests,
 parsing saved test results, shader compilation, and tool settings, plus the
-[explicit one-time setup skill](skills/unity-simple-mcp-setup/SKILL.md). Each includes
+[explicit one-time setup skill](skills/kiss-unity-mcp-setup/SKILL.md). Each includes
 manual usage, prerequisites, and evidence to check; MCP is optional. Start with the
 [shared manual workflow](skills/manual-workflow.md) for absolute paths, VS Code,
 CI/SSH usage, and the exact editor gate. Setup is the sole non-task skill and never
 a routine preamble. The
-[run-parsetests skill](skills/unity-simple-mcp-run-parsetests/SKILL.md) uses the
+[run-parsetests skill](skills/kiss-unity-mcp-run-parsetests/SKILL.md) uses the
 same `parse-tests` action as the manual task. Compatibility wrappers and repository
 maintenance remain documented manual APIs, not skills.
 

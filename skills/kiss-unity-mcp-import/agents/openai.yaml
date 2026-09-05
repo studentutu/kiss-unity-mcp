@@ -1,0 +1,3 @@
+interface:
+  display_name: "kiss-unity-mcp Import"
+  short_description: "Import, compile, and generate Unity projects"

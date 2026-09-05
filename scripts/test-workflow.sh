@@ -21,24 +21,24 @@ cp -R "$root/.codex-plugin" "$root/.agents" "$root/.mcp.json" "$root/scripts" \
   "$root/templates" "$root/com.studentutu.unitysimplemcp" "$root/CI" \
   "$root/bash" "$root/skills" "$validation_root/"
 validator="$validation_root/scripts/validate-plugin.sh"
-skill="$validation_root/skills/unity-simple-mcp-doctor/SKILL.md"
+skill="$validation_root/skills/kiss-unity-mcp-doctor/SKILL.md"
 cp "$skill" "$work/doctor-skill.md"
 expect_exit 0 bash "$validator"
-setup_skill="$validation_root/skills/unity-simple-mcp-setup"
+setup_skill="$validation_root/skills/kiss-unity-mcp-setup"
 mv "$setup_skill" "$work/setup-skill"
 expect_exit 1 bash "$validator"
 grep -qF 'Missing required setup skill' "$work/last.log" || fail 'Missing setup skill accepted'
 mv "$work/setup-skill" "$setup_skill"
 cp "$setup_skill/SKILL.md" "$work/setup-skill.md"
-printf '\nTask: Unity MCP: Check tool paths\n' >> "$setup_skill/SKILL.md"
+printf '\nTask: kiss-unity-mcp: Check tool paths\n' >> "$setup_skill/SKILL.md"
 expect_exit 1 bash "$validator"
 grep -qF 'Setup skill must remain separate from VS Code tasks' "$work/last.log" || fail 'Setup claimed a task'
 cp "$work/setup-skill.md" "$setup_skill/SKILL.md"
 expect_exit 0 bash "$validator"
-sed 's/^name: unity-simple-mcp-doctor$/name: wrong-name/' "$work/doctor-skill.md" > "$skill"
+sed 's/^name: kiss-unity-mcp-doctor$/name: wrong-name/' "$work/doctor-skill.md" > "$skill"
 expect_exit 1 bash "$validator"
 grep -qF 'Skill name must match directory' "$work/last.log" || fail 'Wrong skill-name diagnostic'
-printf '%s\n' '---' 'name: unity-simple-mcp-doctor' 'description: Missing closing delimiter' > "$skill"
+printf '%s\n' '---' 'name: kiss-unity-mcp-doctor' 'description: Missing closing delimiter' > "$skill"
 expect_exit 1 bash "$validator"
 grep -qF 'Invalid skill frontmatter' "$work/last.log" || fail 'Unclosed skill frontmatter accepted'
 cp "$work/doctor-skill.md" "$skill"
@@ -50,22 +50,22 @@ printf '\n```bash\nif then\n```\n' >> "$skill"
 expect_exit 1 bash "$validator"
 grep -qF 'Invalid Bash example' "$work/last.log" || fail 'Invalid manual Bash example accepted'
 cp "$work/doctor-skill.md" "$skill"
-sed 's/^Task: .*/Task: Unity MCP: Internal maintenance/' "$work/doctor-skill.md" > "$skill"
+sed 's/^Task: .*/Task: kiss-unity-mcp: Internal maintenance/' "$work/doctor-skill.md" > "$skill"
 expect_exit 1 bash "$validator"
 grep -qF 'Skill task is not in templates/tasks.json' "$work/last.log" || fail 'Non-task skill accepted'
 cp "$work/doctor-skill.md" "$skill"
-sed 's/^Task: .*/Task: Unity MCP: Fast MSBuild/' "$work/doctor-skill.md" > "$skill"
+sed 's/^Task: .*/Task: kiss-unity-mcp: Fast MSBuild/' "$work/doctor-skill.md" > "$skill"
 expect_exit 1 bash "$validator"
 grep -qF 'End-user task must have exactly one skill' "$work/last.log" || fail 'Duplicate task skills accepted'
 cp "$work/doctor-skill.md" "$skill"
-mv "$validation_root/skills/unity-simple-mcp-doctor" "$work/doctor-skill"
+mv "$validation_root/skills/kiss-unity-mcp-doctor" "$work/doctor-skill"
 expect_exit 1 bash "$validator"
 grep -qF 'End-user task must have exactly one skill' "$work/last.log" || fail 'Missing task skill accepted'
-mv "$work/doctor-skill" "$validation_root/skills/unity-simple-mcp-doctor"
-mv "$validation_root/skills/unity-simple-mcp-doctor/agents/openai.yaml" "$work/doctor-ui.yaml"
+mv "$work/doctor-skill" "$validation_root/skills/kiss-unity-mcp-doctor"
+mv "$validation_root/skills/kiss-unity-mcp-doctor/agents/openai.yaml" "$work/doctor-ui.yaml"
 expect_exit 1 bash "$validator"
 grep -qF 'Missing skill UI metadata' "$work/last.log" || fail 'Missing skill UI metadata accepted'
-mv "$work/doctor-ui.yaml" "$validation_root/skills/unity-simple-mcp-doctor/agents/openai.yaml"
+mv "$work/doctor-ui.yaml" "$validation_root/skills/kiss-unity-mcp-doctor/agents/openai.yaml"
 expect_exit 0 bash "$validator"
 
 project="$work/Project with spaces"
@@ -193,7 +193,7 @@ for task_file in "$project/.vscode/tasks.json" "$project2/.vscode/unity-simple-m
   json_get "$task_file" '' validate || fail "Invalid manual task JSON: $task_file"
   task_index=0; parse_task=''
   while task_label="$(json_get "$task_file" "$task_list/$task_index/label" 2>/dev/null)"; do
-    if [[ "$task_label" == 'Unity MCP: Parse test results' ]]; then
+    if [[ "$task_label" == 'kiss-unity-mcp: Parse test results' ]]; then
       [[ -z "$parse_task" ]] || fail "Duplicate parse task: $task_file"
       parse_task="$task_list/$task_index"
     fi

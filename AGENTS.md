@@ -8,7 +8,7 @@ package boundary separate.
 
 - Project setup is explicit and runs once per Unity project. Never run it as a
   routine preamble to Unity work.
-- Inspect first with `inspect_unity_project` or
+- Inspect first with `inspect_unity_project` on MCP server `kiss-unity-mcp` or
   `bash scripts/setup-unity-project.sh <project> --dry-run`.
 - Setup writes the selected project's `Packages/com.studentutu.unitysimplemcp`,
   `.unity-simple-mcp/` (Bash tools and `tools.env`),
@@ -30,6 +30,8 @@ copy before swapping it into the consumer project's `Packages/` directory.
 - Plugin metadata: `.codex-plugin/plugin.json`
 - Marketplace catalog: `.agents/plugins/marketplace.json`
 - Bundled MCP configuration: `.mcp.json`
+- Plugin/MCP server namespace: `kiss-unity-mcp`; skills: `kiss-unity-mcp-*`.
+  Keep installed filesystem paths and the Unity package identity stable.
 - MCP server: `scripts/mcp-server.sh` (thin stdio adapter)
 - Setup CLI: `scripts/setup-unity-project.sh`
 - Manual API: `scripts/unity.sh <doctor|import|build|tests|shaders|parse-tests> <project>`
@@ -37,7 +39,7 @@ copy before swapping it into the consumer project's `Packages/` directory.
 - Workflow regression tests: `scripts/test-workflow.sh`
 - End-user task skills and manual workflow: `skills/README.md`, `skills/manual-workflow.md`
 - Skill scope: actions exposed by `templates/tasks.json`, plus explicit one-time setup
-  in `skills/unity-simple-mcp-setup/SKILL.md`; no maintenance or compatibility skills.
+  in `skills/kiss-unity-mcp-setup/SKILL.md`; no maintenance or compatibility skills.
 - Unity package: `com.studentutu.unitysimplemcp/`
 - Unity CI: `CI/bash/`
 
@@ -49,7 +51,7 @@ Do not duplicate the authoritative `CI/bash` implementation under `scripts/`.
 ## Marketplace release contract
 
 - The repository is the `studentutu` marketplace and the Git-backed
-  `unity-simple-mcp` plugin source.
+  `kiss-unity-mcp` plugin source.
 - Keep the plugin at the repository root. The marketplace entry uses the remote
   repository URL with `source: "url"`; do not create a duplicate plugin copy
   under `plugins/`.

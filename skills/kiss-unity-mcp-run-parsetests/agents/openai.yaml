@@ -1,0 +1,3 @@
+interface:
+  display_name: "kiss-unity-mcp Parse Test Results"
+  short_description: "Validate saved test logs and NUnit XML"

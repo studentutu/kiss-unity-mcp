@@ -1,0 +1,3 @@
+interface:
+  display_name: "kiss-unity-mcp Fast Build"
+  short_description: "Verify existing C# edits with Rider/MSBuild"

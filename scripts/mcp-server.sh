@@ -44,7 +44,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     initialize)
       protocol="$(json_get "$work/request" /params/protocolVersion 2>/dev/null || true)"
       case "$protocol" in 2024-11-05|2025-03-26|2025-06-18|2025-11-25) ;; *) protocol=2025-06-18;; esac
-      printf '{"jsonrpc":"2.0","id":%s,"result":{"protocolVersion":"%s","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"unity-simple-mcp","version":"%s"},"instructions":"Inspect before explicit one-time setup. Never replace conflicts automatically. Manual API: scripts/unity.sh. Full logs are authoritative."}}\n' "$id" "$protocol" "$version";;
+      printf '{"jsonrpc":"2.0","id":%s,"result":{"protocolVersion":"%s","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"kiss-unity-mcp","version":"%s"},"instructions":"Inspect before explicit one-time setup. Never replace conflicts automatically. Manual API: scripts/unity.sh. Full logs are authoritative."}}\n' "$id" "$protocol" "$version";;
     ping) printf '{"jsonrpc":"2.0","id":%s,"result":{}}\n' "$id";;
     tools/list) printf '{"jsonrpc":"2.0","id":%s,"result":%s}\n' "$id" "$(json_get "$TOOLS_SCRIPT_DIR/tools.json" '' raw)";;
     tools/call)

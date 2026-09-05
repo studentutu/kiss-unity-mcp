@@ -8,7 +8,7 @@ for file in .codex-plugin/plugin.json .agents/plugins/marketplace.json .mcp.json
   json_get "$file" '' validate || fail "Invalid JSON: $file"
 done
 manifest=.codex-plugin/plugin.json
-[[ "$(json_get "$manifest" /name)" == unity-simple-mcp ]] || fail 'Incorrect plugin name'
+[[ "$(json_get "$manifest" /name)" == kiss-unity-mcp ]] || fail 'Incorrect plugin name'
 version="$(json_get "$manifest" /version)"
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+-][A-Za-z0-9.-]+)?$ ]] || fail 'Invalid plugin semantic version'
 for field in description author/name interface/displayName interface/shortDescription interface/longDescription interface/developerName interface/category; do
@@ -16,9 +16,9 @@ for field in description author/name interface/displayName interface/shortDescri
 done
 [[ "$(json_get "$manifest" /version)" == "$(json_get com.studentutu.unitysimplemcp/package.json /version)" ]] || fail 'Plugin/package versions differ'
 [[ "$(json_get "$manifest" /skills)" == ./skills/ && "$(json_get "$manifest" /mcpServers)" == ./.mcp.json ]] || fail 'Plugin entry points invalid'
-[[ "$(json_get .mcp.json /mcpServers/unity_simple_mcp/command)" == git ]] || fail 'MCP must launch through Git Bash'
+[[ "$(json_get .mcp.json /mcpServers/kiss-unity-mcp/command)" == git ]] || fail 'MCP must launch through Git Bash'
 [[ "$(json_get .agents/plugins/marketplace.json /name)" == studentutu ]] || fail 'Marketplace name must remain studentutu'
-[[ "$(json_get .agents/plugins/marketplace.json /plugins/0/name)" == unity-simple-mcp ]] || fail 'Marketplace plugin name mismatch'
+[[ "$(json_get .agents/plugins/marketplace.json /plugins/0/name)" == kiss-unity-mcp ]] || fail 'Marketplace plugin name mismatch'
 [[ "$(json_get .agents/plugins/marketplace.json /plugins/0/source/source)" == url ]] || fail 'Marketplace must use remote URL source'
 [[ "$(json_get .agents/plugins/marketplace.json /plugins/0/source/ref)" == master ]] || fail 'Published source ref must remain master'
 [[ "$(json_get .agents/plugins/marketplace.json /plugins/0/source/url)" == "$(json_get "$manifest" /repository)" ]] || fail 'Marketplace repository mismatch'
@@ -29,7 +29,7 @@ case "$(json_get .agents/plugins/marketplace.json /plugins/0/policy/authenticati
 [[ ! -d plugins ]] || fail 'Do not duplicate the plugin under plugins/'
 while IFS= read -r file; do bash -n "$file" || fail "Bash syntax error: $file"; done < <(find scripts CI/bash bash -name '*.sh' -type f)
 [[ -s skills/README.md && -s skills/manual-workflow.md ]] || fail 'Missing skill catalog or manual workflow'
-[[ -s skills/unity-simple-mcp-setup/SKILL.md ]] || fail 'Missing required setup skill'
+[[ -s skills/kiss-unity-mcp-setup/SKILL.md ]] || fail 'Missing required setup skill'
 task_labels=()
 index=0
 while label="$(json_get templates/tasks.json "/tasks/$index/label" 2>/dev/null)"; do
@@ -61,7 +61,7 @@ for directory in skills/*; do
   awk '/^```bash$/ { code=1; next } /^```$/ { code=0 } code { print }' "$file" | bash -n || fail "Invalid Bash example: $file"
   task="$(sed -n 's/^Task: //p' "$file")"
   # Explicit one-time setup is the sole non-task skill; keep normal checks above.
-  if [[ "$name" == unity-simple-mcp-setup ]]; then
+  if [[ "$name" == kiss-unity-mcp-setup ]]; then
     [[ -z "$task" ]] || fail 'Setup skill must remain separate from VS Code tasks'
     continue
   fi
