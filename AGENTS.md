@@ -25,6 +25,7 @@ copy before swapping it into the consumer project's `Packages/` directory.
 ## Repository entry points
 
 - Plugin metadata: `.codex-plugin/plugin.json`
+- Marketplace catalog: `.agents/plugins/marketplace.json`
 - Bundled MCP configuration: `.mcp.json`
 - MCP server: `scripts/mcp-server.mjs`
 - Setup CLI and implementation: `scripts/setup-unity-project.mjs` and
@@ -38,6 +39,21 @@ Use `rg` for search. Keep changes surgical. Do not add dependencies to the MCP
 server without a demonstrated need; the current server intentionally uses only
 Node built-ins. Do not duplicate the authoritative `CI/bash` scripts into
 `scripts/`.
+
+## Marketplace release contract
+
+- The repository is the `studentutu` marketplace and the Git-backed
+  `unity-simple-mcp` plugin source.
+- Keep the plugin at the repository root. The marketplace entry uses the remote
+  repository URL with `source: "url"`; do not create a duplicate plugin copy
+  under `plugins/`.
+- `master` is the published source ref. Feature branches are not releases.
+- Keep `.codex-plugin/plugin.json` and
+  `com.studentutu.unitysimplemcp/package.json` versions identical.
+- Run `node scripts/validate-plugin.mjs` before publishing. Merge and push the
+  verified commit before asking users to upgrade the marketplace.
+- Do not mutate a developer's Codex marketplace configuration as part of normal
+  repository validation. Installation is an explicit user action.
 
 ## Prerequisite: resolve the exact Unity editor
 

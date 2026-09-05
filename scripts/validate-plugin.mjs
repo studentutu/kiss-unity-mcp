@@ -39,6 +39,11 @@ const interfaceKeys = new Set([
   "logoDark",
   "screenshots",
 ]);
+const marketplaceKeys = new Set(["name", "interface", "plugins"]);
+const marketplaceInterfaceKeys = new Set(["displayName"]);
+const marketplacePluginKeys = new Set(["name", "source", "policy", "category"]);
+const marketplaceSourceKeys = new Set(["source", "url", "ref", "sha"]);
+const marketplacePolicyKeys = new Set(["installation", "authentication", "products"]);
 
 function report(condition, message) {
   if (!condition) errors.push(message);
@@ -198,6 +203,93 @@ async function validateMcpManifest() {
   }
 }
 
+async function validateMarketplace(manifest) {
+  const marketplace = await readJson(".agents/plugins/marketplace.json");
+  if (!isObject(marketplace)) return;
+
+  rejectUnknownKeys(marketplace, marketplaceKeys, "marketplace.json");
+  report(
+    isNonEmptyString(marketplace.name) && /^[A-Za-z0-9_-]+$/.test(marketplace.name),
+    "marketplace.json name must contain only letters, numbers, underscores, or hyphens.",
+  );
+  report(isObject(marketplace.interface), "marketplace.json interface must be an object.");
+  if (isObject(marketplace.interface)) {
+    rejectUnknownKeys(
+      marketplace.interface,
+      marketplaceInterfaceKeys,
+      "marketplace.json interface",
+    );
+    report(
+      isNonEmptyString(marketplace.interface.displayName),
+      "marketplace.json interface.displayName is required.",
+    );
+  }
+
+  report(Array.isArray(marketplace.plugins), "marketplace.json plugins must be an array.");
+  if (!Array.isArray(marketplace.plugins)) return;
+
+  const names = new Set();
+  for (const [index, entry] of marketplace.plugins.entries()) {
+    const label = `marketplace.json plugins[${index}]`;
+    report(isObject(entry), `${label} must be an object.`);
+    if (!isObject(entry)) continue;
+
+    rejectUnknownKeys(entry, marketplacePluginKeys, label);
+    report(
+      isNonEmptyString(entry.name) && /^[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*$/.test(entry.name),
+      `${label}.name is invalid.`,
+    );
+    report(!names.has(entry.name), `${label}.name duplicates ${entry.name}.`);
+    names.add(entry.name);
+
+    report(isObject(entry.source), `${label}.source must be an object.`);
+    if (isObject(entry.source)) {
+      rejectUnknownKeys(entry.source, marketplaceSourceKeys, `${label}.source`);
+      report(entry.source.source === "url", `${label}.source.source must be url.`);
+      report(
+        isNonEmptyString(entry.source.url) && /^https:\/\//.test(entry.source.url),
+        `${label}.source.url must be an HTTPS URL.`,
+      );
+      report(
+        (isNonEmptyString(entry.source.ref) && entry.source.sha === undefined) ||
+          (isNonEmptyString(entry.source.sha) && entry.source.ref === undefined),
+        `${label}.source must select exactly one ref or sha.`,
+      );
+    }
+
+    report(isObject(entry.policy), `${label}.policy must be an object.`);
+    if (isObject(entry.policy)) {
+      rejectUnknownKeys(entry.policy, marketplacePolicyKeys, `${label}.policy`);
+      report(
+        ["NOT_AVAILABLE", "AVAILABLE", "INSTALLED_BY_DEFAULT"].includes(
+          entry.policy.installation,
+        ),
+        `${label}.policy.installation is invalid.`,
+      );
+      report(
+        ["ON_INSTALL", "ON_USE"].includes(entry.policy.authentication),
+        `${label}.policy.authentication is invalid.`,
+      );
+    }
+    report(isNonEmptyString(entry.category), `${label}.category is required.`);
+  }
+
+  if (isObject(manifest)) {
+    const pluginEntry = marketplace.plugins.find((entry) => entry?.name === manifest.name);
+    report(pluginEntry !== undefined, `marketplace.json must expose ${manifest.name}.`);
+    if (pluginEntry !== undefined) {
+      report(
+        pluginEntry.source?.url === manifest.repository,
+        "Marketplace source URL must match plugin.json repository.",
+      );
+      report(
+        pluginEntry.category === manifest.interface?.category,
+        "Marketplace category must match plugin.json interface.category.",
+      );
+    }
+  }
+}
+
 async function validateSkills() {
   report(await isDirectory("skills"), "skills/ directory is required.");
   if (!(await isDirectory("skills"))) return;
@@ -262,6 +354,7 @@ async function validateScripts() {
 
 const manifest = await validateManifest();
 await validateMcpManifest();
+await validateMarketplace(manifest);
 await validateSkills();
 await validatePackage(manifest);
 await validateScripts();

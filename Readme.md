@@ -12,6 +12,7 @@ entry points.
 ## Repository layout
 
 ```text
+.agents/plugins/marketplace.json        Repository marketplace catalog
 .codex-plugin/plugin.json              Codex plugin manifest
 .mcp.json                              Bundled local MCP server configuration
 skills/unity-simple-mcp-setup/         One-time setup workflow
@@ -30,6 +31,27 @@ CI/bash/                               Authoritative Unity verification scripts
 - Unity 2023.1 or newer; the exact project version is declared in
   `ProjectSettings/ProjectVersion.txt`
 - Git and Bash for the repository's Unity CI scripts
+
+## Install from the marketplace
+
+This repository is both the `studentutu` marketplace and the Git-backed source
+for the `unity-simple-mcp` plugin. Add the repository marketplace once, then
+install the plugin from its catalog:
+
+```text
+codex plugin marketplace add studentutu/unity-simple-mcp --ref master --json
+codex plugin add unity-simple-mcp@studentutu --json
+```
+
+Confirm the configured source and installed plugin with:
+
+```text
+codex plugin marketplace list
+codex plugin list
+```
+
+Restart the Codex desktop app and start a new task after installation. Skills
+and MCP servers are discovered when a task starts.
 
 ## One-time project setup
 
@@ -101,3 +123,22 @@ The validator, setup workflow, and MCP server use only Node built-ins. There are
 no external runtime package dependencies. Test the MCP server with JSON-RPC
 messages over standard input; protocol output is written only to standard output
 and diagnostics only to standard error.
+
+## Publish an update
+
+The marketplace tracks the repository's `master` branch. To publish an update:
+
+1. Change the plugin and embedded package together.
+2. Bump the matching versions in `.codex-plugin/plugin.json` and
+   `com.studentutu.unitysimplemcp/package.json`.
+3. Run `node scripts/validate-plugin.mjs` and the relevant Unity verification.
+4. Merge and push the verified commit to `master`.
+5. Refresh and reinstall the plugin:
+
+```text
+codex plugin marketplace upgrade studentutu
+codex plugin add unity-simple-mcp@studentutu --json
+```
+
+Restart Codex and use a new task after reinstalling. A pushed feature branch is
+not a release: the catalog intentionally resolves the plugin from `master`.

@@ -14,7 +14,6 @@
     "url": "https://github.com/studentutu",
     "email": "studentutu@email.com"
   },
-  "changelogUrl": "https://example.com/changelog.html",
-  "documentationUrl": "https://example.com/",
-  "licensesUrl": "https://example.com/licensing.html"
+  "changelogUrl": "https://github.com/studentutu/unity-simple-mcp/blob/master/com.studentutu.unitysimplemcp/CHANGELOG.md",
+  "documentationUrl": "https://github.com/studentutu/unity-simple-mcp/blob/master/com.studentutu.unitysimplemcp/README.md"
 }
