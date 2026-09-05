@@ -21,7 +21,7 @@ bash scripts/unity.sh parse-tests /path/to/project
 ```
 
 Direct CI entry points remain available with `UNITY_PROJECT_PATH` set. Full logs
-and results default to `<project>/Logs/SimpleUnityMcp`; `CI_OUTPUT_DIR` overrides
+and results default to `<project>/Logs/kissunitymcp`; `CI_OUTPUT_DIR` overrides
 that location. `UNITY_TEST_PLATFORM` defaults to EditMode. Keep generated logs,
 XML, snapshots and diagnostics out of source control.
 
@@ -35,7 +35,7 @@ validates the supplied artifacts only, `1` means invalid/missing evidence or
 infrastructure failure, and `2` means failed/inconclusive tests or rejected skips.
 The original run's process status and freshness must be verified separately.
 
-Tool paths are selected in `<project>/.unity-simple-mcp/tools.env`, with environment
+Tool paths are selected in `<project>/.kissunitymcp/tools.env`, with environment
 overrides taking precedence. No path is hard-coded to a particular editor version,
 Rider version, or solution name. The exact Unity version gate also applies to
 MSBuild, but not parse-only. Headless Unity refuses an interactive editor lock;

@@ -3,13 +3,13 @@
 Read this before following a command skill. The repository manual is
 `<plugin-root>/Readme.md`; CI details are in
 `<plugin-root>/CI/RunUnityTestsReadme.md`, and editor capabilities and dependencies
-are in `<plugin-root>/com.studentutu.unitysimplemcp/README.md`.
+are in `<plugin-root>/com.studentutu.kissunitymcp/README.md`.
 
 These are the `kiss-unity-mcp` skills. Select MCP tools from the
 `kiss-unity-mcp` server; `unity-mcp` / `unity-cli` are separate integrations.
 Tool names such as `unity_import` and all Bash commands retain their existing
-names. The installed `.unity-simple-mcp/` directory and
-`unity-simple-mcp.code-workspace` filename are stable filesystem paths.
+names. The installed `.kissunitymcp/` directory and
+`kissunitymcp.code-workspace` filename are stable filesystem paths.
 
 ## Resolve paths, not the current working directory
 
@@ -21,7 +21,7 @@ paths before running commands in Bash 3.2+ or Git Bash:
 ```bash
 PLUGIN_ROOT="/absolute/path/to/kiss-unity-mcp"
 PROJECT_PATH="/absolute/path/to/Unity project"
-TOOL_ROOT="$PROJECT_PATH/.unity-simple-mcp"
+TOOL_ROOT="$PROJECT_PATH/.kissunitymcp"
 ```
 
 The installed `TOOL_ROOT` contains the manual dispatcher and authoritative CI
@@ -46,7 +46,7 @@ requires its selected IDE integration. Setup installs neither dependency.
 
 ## Tool selection and exact editor gate
 
-Edit `<project>/.unity-simple-mcp/tools.env` manually. It accepts `KEY=value` with
+Edit `<project>/.kissunitymcp/tools.env` manually. It accepts `KEY=value` with
 optional surrounding quotes, absolute native/Unix paths, no expansion, and no
 shell commands. Never source it. Nonempty environment overrides take precedence.
 Only these keys belong in that file:
@@ -80,14 +80,14 @@ path. Do not change ProjectVersion.txt to make a command pass.
 Save work and close interactive Unity for this project before headless operations.
 Never kill an editor or delete its lock automatically. Check active processes
 before handling stale `<project>/Temp/UnityLockfile`,
-`<project>/ProjectSettings/.SimpleUnityMcpRun.lock`, or setup locks.
+`<project>/ProjectSettings/.kissunitymcp-run.lock`, or setup locks.
 Filesystem-only inspection/setup, parsing existing test results, and opening tool
 settings do not require an installed Unity editor. Parse-only does not take a run
 lock; wait for test/import operations to finish writing the selected artifacts.
 
 ## Manual VS Code, CI, SSH, and headless use
 
-Open `<project>/.vscode/unity-simple-mcp.code-workspace` and use **Terminal > Run
+Open `<project>/.vscode/kissunitymcp.code-workspace` and use **Terminal > Run
 Task > kiss-unity-mcp**. Existing `<project>/.vscode/tasks.json` is preserved; use the
 dedicated workspace or deliberately merge selected tasks yourself. **Open tool
 settings** needs the `code` CLI; otherwise open tools.env in the Explorer.
@@ -103,7 +103,7 @@ saved log/XML pairs. It overwrites extracted diagnostics but does not rerun test
 
 ## Evidence and reporting
 
-Full logs default to `<project>/Logs/SimpleUnityMcp`. `CI_OUTPUT_DIR` is an
+Full logs default to `<project>/Logs/kissunitymcp`. `CI_OUTPUT_DIR` is an
 environment override, not a tools.env key. Keep the same output directory between
 import and build so they share the import snapshot. Per-operation log overrides,
 `UNITY_TEST_PLATFORM`, and `FAIL_ON_SKIPPED` also belong in the environment.

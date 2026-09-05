@@ -25,7 +25,7 @@ VS Code: **kiss-unity-mcp: Check tool paths**. MCP server `kiss-unity-mcp`: `uni
    versioned Hub executable; doctor lists installed versions and exports the
    resolved editor for its own process. No nearest-version fallback is allowed.
 2. Resolve Rider/MSBuild. If there are zero or multiple candidates, have the
-   developer select the actual tool in `<project>/.unity-simple-mcp/tools.env`
+   developer select the actual tool in `<project>/.kissunitymcp/tools.env`
    with `RIDER_ROOT` or `RIDER_MSBUILD`.
 3. For custom/Toolbox installs, use Rider's **Settings > Build, Execution,
    Deployment > Toolset and Build**. DLLs need a compatible executable

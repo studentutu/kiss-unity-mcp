@@ -1,7 +1,7 @@
 # Agent workflow
 
 This repository is both a Codex plugin and the source of the embedded Unity
-package `com.studentutu.unitysimplemcp`. Keep the plugin boundary and the Unity
+package `com.studentutu.kissunitymcp`. Keep the plugin boundary and the Unity
 package boundary separate.
 
 ## Non-negotiable setup contract
@@ -10,18 +10,18 @@ package boundary separate.
   routine preamble to Unity work.
 - Inspect first with `inspect_unity_project` on MCP server `kiss-unity-mcp` or
   `bash scripts/setup-unity-project.sh <project> --dry-run`.
-- Setup writes the selected project's `Packages/com.studentutu.unitysimplemcp`,
-  `.unity-simple-mcp/` (Bash tools and `tools.env`),
-  `ProjectSettings/SimpleUnityMcpSetup.json`, and the dedicated VS Code workspace.
+- Setup writes the selected project's `Packages/com.studentutu.kissunitymcp`,
+  `.kissunitymcp/` (Bash tools and `tools.env`),
+  `ProjectSettings/kissunitymcp.json`, and the dedicated VS Code workspace.
   Create `.vscode/tasks.json` only when absent; preserve existing tasks and tool settings.
   Temporary setup locks/staging and replacement backups remain within the project.
 - An identical package is a no-op. A conflicting destination is a hard stop.
   Use `--replace` only after the user explicitly requests replacement.
 - Setup is filesystem-only. It must not open Unity, edit `Packages/manifest.json`,
   mutate unrelated project settings. Install the authoritative `CI/bash` into
-  `.unity-simple-mcp/CI/bash` so manual use survives marketplace cache removal.
+  `.kissunitymcp/CI/bash` so manual use survives marketplace cache removal.
 
-The package source is `com.studentutu.unitysimplemcp/`. Do not create a second
+The package source is `com.studentutu.kissunitymcp/`. Do not create a second
 copy inside the plugin repository. The setup implementation stages and hashes a
 copy before swapping it into the consumer project's `Packages/` directory.
 
@@ -40,7 +40,7 @@ copy before swapping it into the consumer project's `Packages/` directory.
 - End-user task skills and manual workflow: `skills/README.md`, `skills/manual-workflow.md`
 - Skill scope: actions exposed by `templates/tasks.json`, plus explicit one-time setup
   in `skills/kiss-unity-mcp-setup/SKILL.md`; no maintenance or compatibility skills.
-- Unity package: `com.studentutu.unitysimplemcp/`
+- Unity package: `com.studentutu.kissunitymcp/`
 - Unity CI: `CI/bash/`
 
 Use `rg` for search. Keep changes surgical. Runtime tooling uses Bash 3.2+,
@@ -57,7 +57,7 @@ Do not duplicate the authoritative `CI/bash` implementation under `scripts/`.
   under `plugins/`.
 - `master` is the published source ref. Feature branches are not releases.
 - Keep `.codex-plugin/plugin.json` and
-  `com.studentutu.unitysimplemcp/package.json` versions identical.
+  `com.studentutu.kissunitymcp/package.json` versions identical.
 - Run `bash scripts/validate-plugin.sh` before publishing. Merge and push the
   verified commit before asking users to upgrade the marketplace.
 - Do not mutate a developer's Codex marketplace configuration as part of normal
@@ -96,14 +96,14 @@ Run repository commands only through these entry points:
 | Setup behavior and portable contracts | `bash scripts/test-workflow.sh` | Regression suite exit `0` |
 | Real failure/restoration checks | `bash scripts/verify-unity-workflow.sh <disposable-project>` | Per-step full logs, process exits, `UNITY_WORKFLOW_VERIFIED` |
 | Setup behavior | `bash scripts/setup-unity-project.sh <temp-project>` | JSON action/state plus copied digest |
-| Long Unity compile/import | `bash ./CI/bash/rebuildSolutionFromUnityItself.sh` | `Logs/SimpleUnityMcp/UnityCompile.log`, diagnostics, `PROJECT_FILES_SYNCED` |
-| Quick C# follow-up | `bash ./CI/bash/rebuildSolutionWithRiderMsBuild.sh` | `Logs/SimpleUnityMcp/RiderMsBuild.log`, diagnostics |
-| EditMode tests | `bash ./CI/bash/runTestsBash.sh` | `Logs/SimpleUnityMcp/UnityTests.log`, fresh NUnit XML |
+| Long Unity compile/import | `bash ./CI/bash/rebuildSolutionFromUnityItself.sh` | `Logs/kissunitymcp/UnityCompile.log`, diagnostics, `PROJECT_FILES_SYNCED` |
+| Quick C# follow-up | `bash ./CI/bash/rebuildSolutionWithRiderMsBuild.sh` | `Logs/kissunitymcp/RiderMsBuild.log`, diagnostics |
+| EditMode tests | `bash ./CI/bash/runTestsBash.sh` | `Logs/kissunitymcp/UnityTests.log`, fresh NUnit XML |
 | Test parse only | `bash ./CI/bash/parseTestErrors.sh` | Parsed existing log/XML; no new Unity run |
-| Shader compile | `bash ./CI/bash/compileShaders.sh` | `Logs/SimpleUnityMcp/UnityShaders.log`, diagnostics, pass marker |
+| Shader compile | `bash ./CI/bash/compileShaders.sh` | `Logs/kissunitymcp/UnityShaders.log`, diagnostics, pass marker |
 
-Logs and diagnostics live in `<project>/Logs/SimpleUnityMcp/` by default.
-All tool selections live in `<project>/.unity-simple-mcp/tools.env`; explicit
+Logs and diagnostics live in `<project>/Logs/kissunitymcp/` by default.
+All tool selections live in `<project>/.kissunitymcp/tools.env`; explicit
 environment overrides take precedence. This file is parsed as data, never sourced.
 
 The quick MSBuild path is valid only when generated solution files are current
@@ -122,7 +122,7 @@ use the existing script classifier.
 Add one thin vertical slice at a time:
 
 1. Put reusable editor behavior under
-   `com.studentutu.unitysimplemcp/Editor` with a stable fully qualified method.
+   `com.studentutu.kissunitymcp/Editor` with a stable fully qualified method.
 2. Emit one stable pass/fail marker and preserve real process exit codes. Persist
    reload-spanning state with `SessionState`.
 3. Add or extend one wrapper under `CI/bash`; do not invoke Unity with ad-hoc

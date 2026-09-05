@@ -4,7 +4,7 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/common.sh"
 root="$(cd "$TOOLS_SCRIPT_DIR/.." && pwd -P)"
 cd "$root"
 for command in bash git awk sed find sort cmp mktemp cp mv; do command -v "$command" >/dev/null || fail "Required utility missing: $command"; done
-for file in .codex-plugin/plugin.json .agents/plugins/marketplace.json .mcp.json scripts/tools.json templates/tasks.json templates/unity-simple-mcp.code-workspace com.studentutu.unitysimplemcp/package.json; do
+for file in .codex-plugin/plugin.json .agents/plugins/marketplace.json .mcp.json scripts/tools.json templates/tasks.json templates/kissunitymcp.code-workspace com.studentutu.kissunitymcp/package.json; do
   json_get "$file" '' validate || fail "Invalid JSON: $file"
 done
 manifest=.codex-plugin/plugin.json
@@ -14,7 +14,9 @@ version="$(json_get "$manifest" /version)"
 for field in description author/name interface/displayName interface/shortDescription interface/longDescription interface/developerName interface/category; do
   [[ -n "$(json_get "$manifest" "/$field")" ]] || fail "Missing plugin metadata: $field"
 done
-[[ "$(json_get "$manifest" /version)" == "$(json_get com.studentutu.unitysimplemcp/package.json /version)" ]] || fail 'Plugin/package versions differ'
+[[ "$(json_get "$manifest" /version)" == "$(json_get com.studentutu.kissunitymcp/package.json /version)" ]] || fail 'Plugin/package versions differ'
+[[ "$(json_get com.studentutu.kissunitymcp/package.json /name)" == com.studentutu.kissunitymcp ]] || fail 'Incorrect Unity package identity'
+[[ "$(json_get com.studentutu.kissunitymcp/Editor/Studentutu.kissunitymcp.Editor.asmdef /name)" == Studentutu.kissunitymcp.Editor ]] || fail 'Incorrect editor assembly identity'
 [[ "$(json_get "$manifest" /skills)" == ./skills/ && "$(json_get "$manifest" /mcpServers)" == ./.mcp.json ]] || fail 'Plugin entry points invalid'
 [[ "$(json_get .mcp.json /mcpServers/kiss-unity-mcp/command)" == git ]] || fail 'MCP must launch through Git Bash'
 [[ "$(json_get .agents/plugins/marketplace.json /name)" == studentutu ]] || fail 'Marketplace name must remain studentutu'
@@ -25,7 +27,7 @@ done
 [[ "$(json_get .agents/plugins/marketplace.json /plugins/0/category)" == "$(json_get "$manifest" /interface/category)" ]] || fail 'Marketplace category mismatch'
 case "$(json_get .agents/plugins/marketplace.json /plugins/0/policy/installation)" in AVAILABLE|NOT_AVAILABLE|INSTALLED_BY_DEFAULT) ;; *) fail 'Invalid marketplace installation policy';; esac
 case "$(json_get .agents/plugins/marketplace.json /plugins/0/policy/authentication)" in ON_INSTALL|ON_USE) ;; *) fail 'Invalid marketplace authentication policy';; esac
-[[ "$(json_get com.studentutu.unitysimplemcp/package.json /dependencies raw)" == '{}' ]] || fail 'Unity package must not force package dependencies'
+[[ "$(json_get com.studentutu.kissunitymcp/package.json /dependencies raw)" == '{}' ]] || fail 'Unity package must not force package dependencies'
 [[ ! -d plugins ]] || fail 'Do not duplicate the plugin under plugins/'
 while IFS= read -r file; do bash -n "$file" || fail "Bash syntax error: $file"; done < <(find scripts CI/bash bash -name '*.sh' -type f)
 [[ -s skills/README.md && -s skills/manual-workflow.md ]] || fail 'Missing skill catalog or manual workflow'

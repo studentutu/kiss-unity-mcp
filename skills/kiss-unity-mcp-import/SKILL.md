@@ -34,10 +34,10 @@ MCP server `kiss-unity-mcp`: `unity_import` with absolute `project_path`.
 ## Verification
 
 Require wrapper exit `0`, Unity process exit `0`, a fresh nonempty
-`<project>/Logs/SimpleUnityMcp/UnityCompile.log`, and
+`<project>/Logs/kissunitymcp/UnityCompile.log`, and
 `SIMPLE_UNITY_MCP_CI:PROJECT_FILES_SYNCED` in that log. Require clean
-`<project>/Logs/SimpleUnityMcp/CompileErrorsAfterUnityRun.txt`, a nonempty generated
-solution, and a newly written `<project>/Logs/SimpleUnityMcp/ImportSnapshot.txt`.
+`<project>/Logs/kissunitymcp/CompileErrorsAfterUnityRun.txt`, a nonempty generated
+solution, and a newly written `<project>/Logs/kissunitymcp/ImportSnapshot.txt`.
 The method is `SimpleUnityMCP.Editor.CiTools.RegenerateProjectFilesAndExit`.
 
 Exit `1` includes missing markers/solutions, bad tool paths, import/compiler

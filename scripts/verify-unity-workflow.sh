@@ -8,29 +8,29 @@ mode="${2:-all}"
 [[ "$mode" == all || "$mode" == --tests-and-shaders || "$mode" == --shaders-only ]] || fail "Unknown verification mode: $mode"
 require_project "$(to_unix_path "$1")"
 root="$(cd "$TOOLS_SCRIPT_DIR/.." && pwd -P)"
-probe="$PROJECT/Assets/SimpleUnityMcpVerification"
+probe="$PROJECT/Assets/kissunitymcp"
 [[ ! -e "$probe" && ! -e "$probe.meta" ]] || fail "Verification fixture already exists: $probe"
-[[ -f "$PROJECT/.unity-simple-mcp/scripts/unity.sh" ]] || fail 'Set up this project first'
+[[ -f "$PROJECT/.kissunitymcp/scripts/unity.sh" ]] || fail 'Set up this project first'
 # Doctor passes the exact version gate before creating fixtures or launching tools.
-bash "$PROJECT/.unity-simple-mcp/scripts/unity.sh" doctor "$PROJECT"
+bash "$PROJECT/.kissunitymcp/scripts/unity.sh" doctor "$PROJECT"
 mkdir -p "$probe/Editor" "$probe/Tests"
 cleanup() {
-  [[ "$probe" == "$PROJECT/Assets/SimpleUnityMcpVerification" && -d "$probe" && ! -L "$probe" ]] || return
+  [[ "$probe" == "$PROJECT/Assets/kissunitymcp" && -d "$probe" && ! -L "$probe" ]] || return
   rm -rf -- "$probe"
   rm -f -- "$probe.meta"
 }
 trap cleanup EXIT
-evidence="$PROJECT/Logs/SimpleUnityMcp/Verification-$(date +%Y%m%d-%H%M%S)"
+evidence="$PROJECT/Logs/kissunitymcp/Verification-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$evidence"
 step() {
   local expected="$1" name="$2" action="$3" status file; shift 3
   printf '\nVERIFY %s: expected %s\n' "$name" "$expected"
   mkdir "$evidence/$name"
   set +e
-  bash "$PROJECT/.unity-simple-mcp/scripts/unity.sh" "$action" "$PROJECT" "$@" > "$evidence/$name/command.log" 2>&1
+  bash "$PROJECT/.kissunitymcp/scripts/unity.sh" "$action" "$PROJECT" "$@" > "$evidence/$name/command.log" 2>&1
   status=$?
   set -e
-  for file in "$PROJECT/Logs/SimpleUnityMcp"/*; do [[ ! -f "$file" ]] || cp "$file" "$evidence/$name/"; done
+  for file in "$PROJECT/Logs/kissunitymcp"/*; do [[ ! -f "$file" ]] || cp "$file" "$evidence/$name/"; done
   printf '%s\n' "$status" > "$evidence/$name/exit-code.txt"
   if (( status!=expected )); then cat "$evidence/$name/command.log" >&2; fail "$name expected exit $expected, got $status. Evidence: $evidence"; fi
   printf '%s passed (exit %s).\n' "$name" "$status"

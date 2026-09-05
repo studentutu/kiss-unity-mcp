@@ -9,8 +9,8 @@ REPOSITORY_ROOT="$(cd "$CI_BASH_DIR/../.." && pwd -P)"
 UNITY_PROJECT_PATH="$(to_unix_path "${UNITY_PROJECT_PATH:-$PWD}")"
 [[ -d "$UNITY_PROJECT_PATH" ]] || fail "Project directory not found: $UNITY_PROJECT_PATH. Pass it to scripts/unity.sh."
 UNITY_PROJECT_PATH="$(cd "$UNITY_PROJECT_PATH" && pwd -P)"
-CONFIG_PATH="$UNITY_PROJECT_PATH/.unity-simple-mcp/tools.env"
-CI_OUTPUT_DIR="$(to_unix_path "${CI_OUTPUT_DIR:-$UNITY_PROJECT_PATH/Logs/SimpleUnityMcp}")"
+CONFIG_PATH="$UNITY_PROJECT_PATH/.kissunitymcp/tools.env"
+CI_OUTPUT_DIR="$(to_unix_path "${CI_OUTPUT_DIR:-$UNITY_PROJECT_PATH/Logs/kissunitymcp}")"
 require_command() { command -v "$1" >/dev/null 2>&1 || fail "Required Bash/Git utility not found: $1"; }
 require_unity_project() { require_project "$UNITY_PROJECT_PATH"; }
 unity_version() { require_unity_project; printf '%s\n' "$PROJECT_VERSION"; }
@@ -102,8 +102,8 @@ project_fingerprint() (
   for folder in Assets Packages ProjectSettings Library/PackageCache; do
     [[ -d "$folder" ]] || continue
     [[ -z "$(find "$folder" -type l -print)" ]] || fail "Fast-build snapshots do not support links under $folder. Run import for authoritative verification."
-    find "$folder" -type f ! -path 'Packages/.simple-unity-mcp-*/*' | LC_ALL=C sort
-    find "$folder" -type f ! -name '*.cs' ! -path 'Packages/.simple-unity-mcp-*/*' | LC_ALL=C sort | \
+    find "$folder" -type f ! -path 'Packages/.kissunitymcp-*/*' | LC_ALL=C sort
+    find "$folder" -type f ! -name '*.cs' ! -path 'Packages/.kissunitymcp-*/*' | LC_ALL=C sort | \
       ROOT="$native_project" awk '{print ENVIRON["ROOT"] "/" $0}' | git hash-object --no-filters --stdin-paths || exit 1
   done
   for file in ./*.sln ./*.csproj; do [[ ! -f "$file" ]] || git hash-object --no-filters -- "$file"; done
@@ -120,7 +120,7 @@ require_import_snapshot() {
 }
 acquire_run_lock() {
   mkdir -p "$CI_OUTPUT_DIR"
-  RUN_LOCK="$UNITY_PROJECT_PATH/ProjectSettings/.SimpleUnityMcpRun.lock"
+  RUN_LOCK="$UNITY_PROJECT_PATH/ProjectSettings/.kissunitymcp-run.lock"
   mkdir "$RUN_LOCK" 2>/dev/null || fail "Another verification is running or left a lock: $RUN_LOCK. Check active processes before removing it."
   trap 'rmdir "$RUN_LOCK"' EXIT
 }

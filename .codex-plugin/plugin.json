@@ -7,12 +7,13 @@
     "email": "studentutu@email.com",
     "url": "https://github.com/studentutu"
   },
-  "homepage": "https://github.com/studentutu/unity-simple-mcp#readme",
-  "repository": "https://github.com/studentutu/unity-simple-mcp.git",
+  "homepage": "https://github.com/studentutu/kiss-unity-mcp#readme",
+  "repository": "https://github.com/studentutu/kiss-unity-mcp.git",
   "keywords": [
-    "unity",
+    "unity3d",
     "game-development",
     "fast-compile",
+    "shader-compile",
     "testing",
     "mcp"
   ],

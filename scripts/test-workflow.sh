@@ -3,8 +3,8 @@
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/common.sh"
 root="$(cd "$TOOLS_SCRIPT_DIR/.." && pwd -P)"
-work="$(mktemp -d "${TMPDIR:-/tmp}/unity-mcp-tests.XXXXXXXX")"
-[[ "$work" == "${TMPDIR:-/tmp}"/unity-mcp-tests.* ]] || fail 'Unsafe test directory'
+work="$(mktemp -d "${TMPDIR:-/tmp}/kissunitymcp-tests.XXXXXXXX")"
+[[ "$work" == "${TMPDIR:-/tmp}"/kissunitymcp-tests.* ]] || fail 'Unsafe test directory'
 trap 'rm -rf -- "$work"' EXIT
 checks=0
 expect_exit() {
@@ -18,7 +18,7 @@ expect_exit() {
 validation_root="$work/Plugin validation"
 mkdir "$validation_root"
 cp -R "$root/.codex-plugin" "$root/.agents" "$root/.mcp.json" "$root/scripts" \
-  "$root/templates" "$root/com.studentutu.unitysimplemcp" "$root/CI" \
+  "$root/templates" "$root/com.studentutu.kissunitymcp" "$root/CI" \
   "$root/bash" "$root/skills" "$validation_root/"
 validator="$validation_root/scripts/validate-plugin.sh"
 skill="$validation_root/skills/kiss-unity-mcp-doctor/SKILL.md"
@@ -74,18 +74,41 @@ printf 'm_EditorVersion: 6000.3.15f1\r\n' > "$project/ProjectSettings/ProjectVer
 printf '{"dependencies":{}}\n' > "$project/Packages/manifest.json"
 manifest_before="$(git hash-object "$project/Packages/manifest.json")"
 expect_exit 0 bash "$root/scripts/setup-unity-project.sh" "$project" --dry-run
-[[ "$(json_get "$work/last.log" /state)" == not_installed && ! -e "$project/.unity-simple-mcp" ]] || fail 'Dry run mutated project'
+[[ "$(json_get "$work/last.log" /state)" == not_installed && ! -e "$project/.kissunitymcp" ]] || fail 'Dry run mutated project'
 expect_exit 0 bash "$root/scripts/setup-unity-project.sh" "$project"
-[[ -f "$project/.vscode/tasks.json" && -f "$project/.unity-simple-mcp/tools.env" ]] || fail 'Manual workflow missing'
+[[ -f "$project/.vscode/tasks.json" && -f "$project/.kissunitymcp/tools.env" ]] || fail 'Manual workflow missing'
+[[ -f "$project/ProjectSettings/kissunitymcp.json" &&
+   "$(json_get "$project/Packages/com.studentutu.kissunitymcp/package.json" /name)" == com.studentutu.kissunitymcp ]] || fail 'Installed package or setup marker has the wrong identity'
 expect_exit 0 bash "$root/scripts/setup-unity-project.sh" "$project"
 [[ "$(json_get "$work/last.log" /action)" == already_installed ]] || fail 'Setup not idempotent'
-printf '\nRIDER_ROOT=/custom rider\n' >> "$project/.unity-simple-mcp/tools.env"
+printf '\nRIDER_ROOT=/custom rider\n' >> "$project/.kissunitymcp/tools.env"
 expect_exit 0 bash "$root/scripts/setup-unity-project.sh" "$project"
-grep -q '/custom rider' "$project/.unity-simple-mcp/tools.env" || fail 'Setup overwrote config'
-printf '\nchanged\n' >> "$project/Packages/com.studentutu.unitysimplemcp/README.md"
+grep -q '/custom rider' "$project/.kissunitymcp/tools.env" || fail 'Setup overwrote config'
+printf '\nchanged\n' >> "$project/Packages/com.studentutu.kissunitymcp/README.md"
 expect_exit 1 bash "$root/scripts/setup-unity-project.sh" "$project"
 expect_exit 0 bash "$root/scripts/setup-unity-project.sh" "$project" --replace
 [[ "$manifest_before" == "$(git hash-object "$project/Packages/manifest.json")" ]] || fail 'Setup mutated manifest'
+
+# Former paths must block duplicate installs, including an explicit --replace.
+legacy_project="$work/Legacy installation"
+mkdir -p "$legacy_project/Assets" "$legacy_project/Packages" "$legacy_project/ProjectSettings" "$legacy_project/.vscode"
+cp "$project/ProjectSettings/ProjectVersion.txt" "$legacy_project/ProjectSettings/"
+for legacy_path in Packages/com.studentutu.unitysimplemcp .unity-simple-mcp \
+  ProjectSettings/SimpleUnityMcpSetup.json .vscode/unity-simple-mcp.code-workspace \
+  ProjectSettings/.SimpleUnityMcpRun.lock ProjectSettings/.SimpleUnityMcpSetup.lock; do
+  mkdir "$legacy_project/$legacy_path"
+  legacy_before="$(tree_digest "$legacy_project")"
+  expect_exit 0 bash "$root/scripts/setup-unity-project.sh" "$legacy_project" --dry-run
+  sed -n '/^{/p' "$work/last.log" > "$work/inspection.json"
+  [[ "$(json_get "$work/inspection.json" /state)" == conflict ]] || fail 'Inspection missed legacy installation'
+  expect_exit 1 bash "$root/scripts/setup-unity-project.sh" "$legacy_project"
+  expect_exit 1 bash "$root/scripts/setup-unity-project.sh" "$legacy_project" --replace
+  grep -qF 'Legacy installation paths require migration' "$work/last.log" || fail 'Missing migration diagnostic'
+  [[ "$legacy_before" == "$(tree_digest "$legacy_project")" &&
+     ! -e "$legacy_project/Packages/com.studentutu.kissunitymcp" &&
+     ! -e "$legacy_project/.kissunitymcp" ]] || fail 'Legacy installation was mutated'
+  rmdir "$legacy_project/$legacy_path"
+done
 
 # Existing JSONC user tasks must be preserved byte-for-byte.
 project2="$work/Existing tasks"
@@ -94,7 +117,7 @@ cp "$project/ProjectSettings/ProjectVersion.txt" "$project2/ProjectSettings/"
 printf '// personal tasks\n{"tasks":[]}\n' > "$project2/.vscode/tasks.json"
 before="$(git hash-object "$project2/.vscode/tasks.json")"
 expect_exit 0 bash "$root/scripts/setup-unity-project.sh" "$project2"
-[[ "$before" == "$(git hash-object "$project2/.vscode/tasks.json")" && -f "$project2/.vscode/unity-simple-mcp.code-workspace" ]] || fail 'Existing tasks not preserved'
+[[ "$before" == "$(git hash-object "$project2/.vscode/tasks.json")" && -f "$project2/.vscode/kissunitymcp.code-workspace" ]] || fail 'Existing tasks not preserved'
 
 # JSON grammar, Unicode escapes, and transport framing; no shell evaluation.
 printf '%s\n' '{"x":"C:\\A \u03b1 \ud83d\ude80","id":"q\"\\id"}' > "$work/json"
@@ -165,9 +188,9 @@ expect_exit 1 awk -f "$root/CI/bash/nunit-summary.awk" "$work/inconsistent.xml"
 printf 'Test run completed. Exiting with code 0\n' > "$work/editor.log"
 expect_exit 0 bash "$root/CI/bash/parseTestErrors.sh" --test-results "$work/results.xml" --unity-log "$work/editor.log"
 # Manual installed CLI and compatibility aliases must parse without an editor.
-expect_exit 0 bash "$project2/.unity-simple-mcp/scripts/unity.sh" help
-expect_exit 0 bash "$project2/.unity-simple-mcp/scripts/unity.sh" parse-tests "$project2" --test-results "$work/results.xml" --unity-log "$work/editor.log"
-expect_exit 0 bash "$project2/.unity-simple-mcp/CI/bash/runParsetests.sh" --test-results "$work/results.xml" --unity-log "$work/editor.log"
+expect_exit 0 bash "$project2/.kissunitymcp/scripts/unity.sh" help
+expect_exit 0 bash "$project2/.kissunitymcp/scripts/unity.sh" parse-tests "$project2" --test-results "$work/results.xml" --unity-log "$work/editor.log"
+expect_exit 0 bash "$project2/.kissunitymcp/CI/bash/runParsetests.sh" --test-results "$work/results.xml" --unity-log "$work/editor.log"
 expect_exit 0 bash "$root/bash/parseTestErrors.sh" --test-results "$work/results.xml" --unity-log "$work/editor.log"
 expect_exit 0 bash "$root/bash/runParsetests.sh" --test-results "$work/results.xml" --unity-log "$work/editor.log"
 sed 's/result="Passed"/result="Failed"/g;s/passed="1"/passed="0"/;s/failed="0"/failed="1"/' "$work/results.xml" > "$work/failed.xml"
@@ -183,8 +206,8 @@ run_parse_task() (
   cd "$work"
   "${task_command[@]}"
 )
-cmp -s "$root/templates/tasks.json" "$project/.unity-simple-mcp/tasks.json" || fail 'Installed task template differs'
-for task_file in "$project/.vscode/tasks.json" "$project2/.vscode/unity-simple-mcp.code-workspace" "$root/.vscode/tasks.json"; do
+cmp -s "$root/templates/tasks.json" "$project/.kissunitymcp/tasks.json" || fail 'Installed task template differs'
+for task_file in "$project/.vscode/tasks.json" "$project2/.vscode/kissunitymcp.code-workspace" "$root/.vscode/tasks.json"; do
   task_list=/tasks; task_project="$project"; workspace_folder="$project"
   case "$task_file" in
     *.code-workspace) task_list=/tasks/tasks; task_project="$project2"; workspace_folder="$project2";;
@@ -213,7 +236,7 @@ for task_file in "$project/.vscode/tasks.json" "$project2/.vscode/unity-simple-m
     task_command+=("$argument")
     argument_index=$((argument_index+1))
   done
-  task_output="$task_project/Logs/SimpleUnityMcp"
+  task_output="$task_project/Logs/kissunitymcp"
   mkdir -p "$task_output"
   cp "$work/editor.log" "$task_output/UnityTests.log"
   cp "$work/results.xml" "$task_output/CITestOutput.xml"

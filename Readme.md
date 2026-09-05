@@ -4,7 +4,8 @@ Separate marketplace that contains `kiss-unity-mcp` plugin.
 
 Use `kiss-unity-mcp` for the plugin and MCP server, `kiss-unity-mcp-*` for
 skills (for example, `$kiss-unity-mcp-import`), and `kiss-unity-mcp:` for VS Code
-tasks. This is a separate integration from `unity-mcp` / `unity-cli`.
+tasks.
+This is a separate integration from `unity-mcp` / `unity-cli`.
 MCP tool names such as `unity_import` belong to the `kiss-unity-mcp` server.
 
 Editor-side tools for a headless, agent-friendly Unity workflow.
@@ -60,10 +61,10 @@ bash scripts/setup-unity-project.sh "/path/to/Unity project"
 The project must already contain `Assets`, `Packages`, and
 `ProjectSettings/ProjectVersion.txt`. Setup is filesystem-only and writes:
 
-- `Packages/com.studentutu.unitysimplemcp`: reusable editor code.
-- `.unity-simple-mcp`: a self-contained copy of the Bash commands and `tools.env`.
-- `ProjectSettings/SimpleUnityMcpSetup.json`: installation digests.
-- `.vscode/unity-simple-mcp.code-workspace`: a dedicated workspace with tasks.
+- `Packages/com.studentutu.kissunitymcp`: reusable editor code.
+- `.kissunitymcp`: a self-contained copy of the Bash commands and `tools.env`.
+- `ProjectSettings/kissunitymcp.json`: installation digests.
+- `.vscode/kissunitymcp.code-workspace`: a dedicated workspace with tasks.
 - `.vscode/tasks.json`: only when that file does not already exist.
 
 The package manifest and existing VS Code tasks stay intact. Repeating setup is
@@ -75,14 +76,14 @@ bash scripts/setup-unity-project.sh "/path/to/Unity project" --replace
 ```
 
 Replacement preserves `tools.env` and keeps the previous directories under
-`Packages/.simple-unity-mcp-setup-<pid>/` for recovery. Remove those backups after
+`Packages/.kissunitymcp-setup-<pid>/` for recovery. Remove those backups after
 review. Source/copy byte digests detect damaged copies; they are not signatures.
 Symlinks, special files, and newline-containing package filenames are rejected.
 Setup never starts Unity or modifies `Packages/manifest.json`.
 
 ## Use Cases
 
-Full logs live in `Logs/SimpleUnityMcp` inside the Unity project:
+Full logs live in `Logs/kissunitymcp` inside the Unity project:
 
 | Operation | Authoritative evidence |
 | --- | --- |
@@ -94,12 +95,12 @@ Full logs live in `Logs/SimpleUnityMcp` inside the Unity project:
 The equivalent commands from the Unity project root (after setup) are:
 
 ```bash
-bash .unity-simple-mcp/scripts/unity.sh doctor
-bash .unity-simple-mcp/scripts/unity.sh import
-bash .unity-simple-mcp/scripts/unity.sh build
-bash .unity-simple-mcp/scripts/unity.sh tests
-bash .unity-simple-mcp/scripts/unity.sh shaders
-bash .unity-simple-mcp/scripts/unity.sh parse-tests
+bash .kissunitymcp/scripts/unity.sh doctor
+bash .kissunitymcp/scripts/unity.sh import
+bash .kissunitymcp/scripts/unity.sh build
+bash .kissunitymcp/scripts/unity.sh tests
+bash .kissunitymcp/scripts/unity.sh shaders
+bash .kissunitymcp/scripts/unity.sh parse-tests
 ```
 
 ### Manual use without agents
@@ -109,12 +110,12 @@ Open the project in VS Code and choose **Terminal > Run Task > kiss-unity-mcp**.
 ### Details on vscode and bash use
 
 If the project already had tasks, open its generated
-`.vscode/unity-simple-mcp.code-workspace` to access the additional tasks (copy them to your `.vscode/tasks.json` in case you don't want to override it, but need them).
+`.vscode/kissunitymcp.code-workspace` to access the additional tasks (copy them to your `.vscode/tasks.json` in case you don't want to override it, but need them).
 Use **Check tool paths**, **Import and generate solution**, then **Fast MSBuild**.
 Use **EditMode tests** to run all tests, or **Parse test results** to inspect
 existing NUnit XML and the matching Unity log without launching Unity.
 **Open tool settings** opens the one configuration file. It uses VS Code's `code`
-CLI; if that CLI is not on PATH, open `.unity-simple-mcp/tools.env` in the Explorer.
+CLI; if that CLI is not on PATH, open `.kissunitymcp/tools.env` in the Explorer.
 
 Commands work from another directory when given an explicit project path. The
 installed scripts do not depend on the marketplace cache or this checkout.
@@ -166,7 +167,7 @@ A Bash script cannot compile C# without a compiler. Setup installs only template
 Tests require the consuming project to already have Unity
 Test Framework. The embedded package has no package dependencies.
 
-Edit `.unity-simple-mcp/tools.env`. This is a data file, not sourced shell code:
+Edit `.kissunitymcp/tools.env`. This is a data file, not sourced shell code:
 `KEY=value`, optional surrounding quotes, absolute paths, no variable expansion.
 Spaces and Windows paths are supported. Environment overrides take precedence.
 
@@ -202,7 +203,7 @@ matrix runs these Bash contracts on Windows, macOS, and Linux. Actual editor and
 Rider validation must also run on each target OS before claiming native coverage.
 The integration script temporarily adds a compiler/importer/test/shader fixture,
 checks intentional failure and restored success, removes the fixture, and leaves
-per-step full logs under `Logs/SimpleUnityMcp/Verification-<timestamp>`.
+per-step full logs under `Logs/kissunitymcp/Verification-<timestamp>`.
 The package ships no runtime scaffolding or empty sample tests; projects with no
 tests fail the test command instead of receiving an artificial green result.
 

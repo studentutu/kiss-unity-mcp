@@ -15,7 +15,7 @@ Task: kiss-unity-mcp: Open tool settings
 Choose **Terminal > Run Task > kiss-unity-mcp: Open tool settings**, or run:
 
 ```bash
-code --reuse-window "$PROJECT_PATH/.unity-simple-mcp/tools.env"
+code --reuse-window "$PROJECT_PATH/.kissunitymcp/tools.env"
 ```
 
 If the `code` CLI is unavailable, open the same file in VS Code's Explorer.

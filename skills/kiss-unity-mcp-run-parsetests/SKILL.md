@@ -39,9 +39,9 @@ UNITY_DIAGNOSTICS_PATH="$ARTIFACT_DIR/ParsedDiagnostics.txt" \
 
 1. Select the log and XML from the same completed run. Do not parse files while a
    test/import operation is writing them; parse-only does not acquire a run lock.
-2. Defaults are `<project>/Logs/SimpleUnityMcp/CITestOutput.xml` and
-   `<project>/Logs/SimpleUnityMcp/UnityTests.log`. Diagnostics are overwritten at
-   `<project>/Logs/SimpleUnityMcp/CompileErrorsAfterUnityRun.txt`. Never set the
+2. Defaults are `<project>/Logs/kissunitymcp/CITestOutput.xml` and
+   `<project>/Logs/kissunitymcp/UnityTests.log`. Diagnostics are overwritten at
+   `<project>/Logs/kissunitymcp/CompileErrorsAfterUnityRun.txt`. Never set the
    diagnostic output to either input file.
 3. Use environment overrides `CI_OUTPUT_DIR`, `UNITY_TEST_RESULTS_PATH`,
    `UNITY_TEST_LOG_PATH`, and `UNITY_DIAGNOSTICS_PATH` when needed. Explicit

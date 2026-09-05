@@ -9,7 +9,7 @@
         "-c",
         "alias.unity-bash=!bash",
         "unity-bash",
-        "${workspaceFolder}/.unity-simple-mcp/scripts/unity.sh",
+        "${workspaceFolder}/.kissunitymcp/scripts/unity.sh",
         "doctor",
         "${workspaceFolder}"
       ],
@@ -24,7 +24,7 @@
         "-c",
         "alias.unity-bash=!bash",
         "unity-bash",
-        "${workspaceFolder}/.unity-simple-mcp/scripts/unity.sh",
+        "${workspaceFolder}/.kissunitymcp/scripts/unity.sh",
         "import",
         "${workspaceFolder}"
       ],
@@ -39,7 +39,7 @@
         "-c",
         "alias.unity-bash=!bash",
         "unity-bash",
-        "${workspaceFolder}/.unity-simple-mcp/scripts/unity.sh",
+        "${workspaceFolder}/.kissunitymcp/scripts/unity.sh",
         "build",
         "${workspaceFolder}"
       ],
@@ -54,7 +54,7 @@
         "-c",
         "alias.unity-bash=!bash",
         "unity-bash",
-        "${workspaceFolder}/.unity-simple-mcp/scripts/unity.sh",
+        "${workspaceFolder}/.kissunitymcp/scripts/unity.sh",
         "tests",
         "${workspaceFolder}"
       ],
@@ -69,7 +69,7 @@
         "-c",
         "alias.unity-bash=!bash",
         "unity-bash",
-        "${workspaceFolder}/.unity-simple-mcp/scripts/unity.sh",
+        "${workspaceFolder}/.kissunitymcp/scripts/unity.sh",
         "parse-tests",
         "${workspaceFolder}"
       ],
@@ -84,7 +84,7 @@
         "-c",
         "alias.unity-bash=!bash",
         "unity-bash",
-        "${workspaceFolder}/.unity-simple-mcp/scripts/unity.sh",
+        "${workspaceFolder}/.kissunitymcp/scripts/unity.sh",
         "shaders",
         "${workspaceFolder}"
       ],
@@ -97,7 +97,7 @@
       "command": "code",
       "args": [
         "--reuse-window",
-        "${workspaceFolder}/.unity-simple-mcp/tools.env"
+        "${workspaceFolder}/.kissunitymcp/tools.env"
       ],
       "group": "build",
       "problemMatcher": []

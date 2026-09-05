@@ -35,11 +35,11 @@ tests. These are environment settings, not MCP arguments or tools.env keys.
 ## Verification
 
 Require exit `0`, Unity process status `0`, fresh nonempty
-`<project>/Logs/SimpleUnityMcp/UnityTests.log` and
-`<project>/Logs/SimpleUnityMcp/CITestOutput.xml`, and log marker
+`<project>/Logs/kissunitymcp/UnityTests.log` and
+`<project>/Logs/kissunitymcp/CITestOutput.xml`, and log marker
 `Test run completed. Exiting with code`. Require structurally valid, consistent
 NUnit counts, at least one discovered test, passing root `test-run`, and clean
-`<project>/Logs/SimpleUnityMcp/CompileErrorsAfterUnityRun.txt`.
+`<project>/Logs/kissunitymcp/CompileErrorsAfterUnityRun.txt`.
 
 Exit `1` includes infrastructure/compiler errors, missing or malformed artifacts,
 missing completion evidence, or no discovered tests. Exit `2` means failed or

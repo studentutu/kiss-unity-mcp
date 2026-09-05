@@ -5,7 +5,7 @@ source "$SCRIPT_DIR/common.sh"
 action="${1:-help}"
 if [[ "$action" == help || "$action" == --help ]]; then
   printf 'Usage: bash %s <doctor|import|build|tests|shaders|parse-tests> [Unity project]\n' "$0"
-  printf 'Edit <project>/.unity-simple-mcp/tools.env to select Unity Hub, Unity editor and Rider/MSBuild.\n'
+  printf 'Edit <project>/.kissunitymcp/tools.env to select Unity Hub, Unity editor and Rider/MSBuild.\n'
   exit 0
 fi
 shift

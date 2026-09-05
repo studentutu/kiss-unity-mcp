@@ -4,7 +4,7 @@ These skills describe the same supported workflows used by agents and manual
 developers. Start with the [shared manual workflow](manual-workflow.md) for absolute
 path variables, tools.env, the exact editor gate, VS Code tasks, and log/exit rules.
 The [repository manual](../Readme.md), [CI manual](../CI/RunUnityTestsReadme.md),
-and [Unity package README](../com.studentutu.unitysimplemcp/README.md) remain the
+and [Unity package README](../com.studentutu.kissunitymcp/README.md) remain the
 installation and capability references.
 
 Skills cover the actions in [the task template](../templates/tasks.json), plus

@@ -1,4 +1,7 @@
-# Simple Unity MCP editor package
+# kissunitymcp editor package
+
+Package ID: `com.studentutu.kissunitymcp`. Editor assembly:
+`Studentutu.kissunitymcp.Editor`. The plugin and repository are `kiss-unity-mcp`.
 
 Reusable editor methods for Unity 2023.1+. There are no required package
 dependencies. Test execution needs the consuming project's Unity Test Framework;
@@ -20,5 +23,5 @@ The shell wrapper still scans the complete native editor log, including errors
 before managed initialization or after the execute method.
 
 Shell tools remain outside this package. Setup installs them into the project's
-`.unity-simple-mcp` directory, with tool paths in `tools.env` and VS Code actions
+`.kissunitymcp` directory, with tool paths in `tools.env` and VS Code actions
 in `.vscode`. See the plugin repository's Readme.md for the manual workflow.

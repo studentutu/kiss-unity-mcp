@@ -37,10 +37,10 @@ diagnostic file logger; arbitrary MSBuild switches are not a supported CLI surfa
 ## Verification
 
 Require exit `0`, both MSBuild and console-capture status `0`, fresh nonempty
-`<project>/Logs/SimpleUnityMcp/RiderMsBuild.log`, its `Build succeeded.` summary,
-empty `<project>/Logs/SimpleUnityMcp/MsBuildErrors.txt`, and console marker
+`<project>/Logs/kissunitymcp/RiderMsBuild.log`, its `Build succeeded.` summary,
+empty `<project>/Logs/kissunitymcp/MsBuildErrors.txt`, and console marker
 `SIMPLE_UNITY_MCP_CI:MSBUILD_PASSED`. Console navigation is retained separately in
-`<project>/Logs/SimpleUnityMcp/RiderMsBuild.console.log`.
+`<project>/Logs/kissunitymcp/RiderMsBuild.console.log`.
 
 Exit `1` is a configuration, stale-input, compile, logging, or infrastructure
 failure. Read the full diagnostic log; a quiet console or a process exit alone is

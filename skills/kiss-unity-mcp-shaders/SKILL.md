@@ -34,9 +34,9 @@ VS Code: **kiss-unity-mcp: Compile shaders**. MCP server `kiss-unity-mcp`: `unit
 ## Verification
 
 Require exit `0`, Unity process exit `0`, a fresh nonempty
-`<project>/Logs/SimpleUnityMcp/UnityShaders.log`, its
+`<project>/Logs/kissunitymcp/UnityShaders.log`, its
 `SIMPLE_UNITY_MCP_CI:SHADER_COMPILATION_PASSED` marker, and clean
-`<project>/Logs/SimpleUnityMcp/ShaderCompileErrors.txt`. Exit `1` includes process,
+`<project>/Logs/kissunitymcp/ShaderCompileErrors.txt`. Exit `1` includes process,
 marker, shader/import/compiler, or infrastructure failure. Keep both full log and
 diagnostics and report actual errors, not every filename containing Error.
 
