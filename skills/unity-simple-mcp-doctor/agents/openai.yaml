@@ -1,0 +1,3 @@
+interface:
+  display_name: "Unity MCP Tool Doctor"
+  short_description: "Check exact Unity and Rider tool paths"

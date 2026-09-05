@@ -62,6 +62,21 @@
       "problemMatcher": []
     },
     {
+      "label": "Unity MCP: Parse test results",
+      "type": "process",
+      "command": "git",
+      "args": [
+        "-c",
+        "alias.unity-bash=!bash",
+        "unity-bash",
+        "${workspaceFolder}/scripts/unity.sh",
+        "parse-tests",
+        "${input:unityProject}"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
       "label": "Unity MCP: Compile shaders",
       "type": "process",
       "command": "git",

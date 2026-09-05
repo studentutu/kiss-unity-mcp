@@ -1,59 +1,62 @@
 ---
 name: unity-simple-mcp-setup
-description: Install Unity Simple MCP once, inspect its state, or use its Bash commands for Unity import, fast Rider/MSBuild compilation, tests and shader checks. Use setup only when explicitly requested.
+description: Inspect or explicitly set up Unity Simple MCP once in a selected Unity project. Install the embedded package, standalone Bash tools, tool settings, and VS Code tasks while preserving existing developer configuration.
 ---
 
-# Unity Simple MCP
+# Inspect and set up a Unity project
 
-Resolve the plugin root two directories above this skill. Commands require Bash
-3.2+, Git and standard Unix utilities; no Node, Python or package manager.
+Read `<plugin-root>/skills/manual-workflow.md` first; resolve `PLUGIN_ROOT` and
+`PROJECT_PATH` to absolute paths. Setup is the sole skill outside the VS Code task
+template. It is filesystem-only: no installed Unity editor or Rider is required.
 
-## Explicit one-time setup
+## Procedure
 
-1. Resolve the selected Unity project (Assets, Packages, ProjectSettings/ProjectVersion.txt).
-2. Call `inspect_unity_project` or run `bash <plugin-root>/scripts/setup-unity-project.sh <project> --dry-run`.
-3. `installed`: setup is already complete. `not_installed`: run setup only when requested.
-   `conflict`: report exact paths; do not replace user changes automatically.
-4. Call `setup_unity_project` or run `bash <plugin-root>/scripts/setup-unity-project.sh <project>`.
-5. Inspect once more and require `installed`. Point the user to
-   `<project>/.unity-simple-mcp/tools.env` and
-   `<project>/.vscode/unity-simple-mcp.code-workspace` for manual control.
+1. Confirm the selected project already has Assets, Packages, and
+   `<project>/ProjectSettings/ProjectVersion.txt`, with Unity 2023.1 or newer.
+2. Inspect first with the dry-run command below, or MCP `inspect_unity_project`
+   with absolute `project_path`. Inspection never authorizes installation.
+3. Read the JSON state: `installed` needs no routine setup; `not_installed` permits
+   installation only when requested; `conflict` requires review and a hard stop.
+4. For an explicit installation request, run setup once or call MCP
+   `setup_unity_project` with `project_path`. Inspect again afterward.
+5. Hand off to the settings and doctor skills for subsequent tool selection and
+   checks. Never repeat setup as a preamble to import, build, tests, or shaders.
 
-Setup copies the embedded Unity package and standalone Bash tooling. It creates
-VS Code tasks only when absent and always provides a dedicated workspace.
-It preserves existing tasks and tool settings; it never starts Unity or edits
-Packages/manifest.json. Only use CLI `--replace` for an intentional authorized
-replacement. Previous installations are retained for recovery.
+## Manual usage
 
-## After setup
-
-Never repeat setup as a routine preamble. Use MCP tools `unity_doctor`,
-`unity_import`, `unity_build`, `unity_tests`, and `unity_shaders`, or the same
-manual API:
+Inspect from the plugin checkout/installation, not the installed consumer tools:
 
 ```bash
-bash <project>/.unity-simple-mcp/scripts/unity.sh doctor <project>
-bash <project>/.unity-simple-mcp/scripts/unity.sh import <project>
-bash <project>/.unity-simple-mcp/scripts/unity.sh build <project>
-bash <project>/.unity-simple-mcp/scripts/unity.sh tests <project>
-bash <project>/.unity-simple-mcp/scripts/unity.sh shaders <project>
+bash "$PLUGIN_ROOT/scripts/setup-unity-project.sh" "$PROJECT_PATH" --dry-run
 ```
 
-Every Unity-backed command resolves the exact editor from ProjectVersion.txt,
-lists installed editors, and fails with configuration paths if tools are missing.
-Close interactive Unity for that project before a headless process; do not kill
-an editor with potentially unsaved work. Tool settings are parsed data, not shell
-code. Use Git Bash for Windows editors, not WSL.
+Only for an explicitly requested installation:
 
-Run import first. Fast MSBuild only validates existing C# projects and requires a
-matching import snapshot. Added/removed files, assets, asmdefs, packages, settings,
-compilation directives, or importer/editor behavior changes require another
-Unity import. Tests require the consumer's existing Unity Test Framework; setup
-never installs it. Shader import checks do not cover every player build variant.
+```bash
+bash "$PLUGIN_ROOT/scripts/setup-unity-project.sh" "$PROJECT_PATH"
+```
 
-Read `<project>/Logs/SimpleUnityMcp/` on failure. Complete Unity editor logs and
-MSBuild diagnostic file logs are authoritative; summaries are only navigation.
-Require zero process status, fresh nonempty logs, completion evidence and clean
-diagnostics. Tests additionally require structurally valid, consistent NUnit XML,
-at least one discovered test, and a passing root test-run. Exit `1` means tool /
-compile / infrastructure failure; `2` means failed or inconclusive tests.
+Use CLI `--replace` only after the user explicitly requests replacement of reviewed
+conflicts. MCP does not expose replacement. Existing tools.env values are preserved;
+previous installations are retained under
+`<project>/Packages/.simple-unity-mcp-setup-<pid>` for recovery. A customized
+dedicated workspace remains a conflict even with `--replace`; do not overwrite it.
+
+## Verification
+
+Require exit `0`, JSON action `installed` or `already_installed`, then inspection
+state `installed`. Inspection may exit `0` with state `conflict`, so read the JSON,
+not just the exit status. Retain the reported version and source/tools digests.
+Exit `1` means setup failed; report the error and recovery paths without deleting
+user data or locks automatically.
+
+Check the package at `<project>/Packages/com.studentutu.unitysimplemcp`, standalone
+tools at `<project>/.unity-simple-mcp`, setup marker at
+`<project>/ProjectSettings/SimpleUnityMcpSetup.json`, and dedicated workspace at
+`<project>/.vscode/unity-simple-mcp.code-workspace`. Existing tasks.json and tool
+settings must remain intact; tasks.json is created only when absent. Setup never
+opens Unity, edits the package manifest, or installs project dependencies.
+
+Point the developer to `<project>/.unity-simple-mcp/tools.env` and the dedicated
+workspace for manual use. Do not automatically launch Unity-backed verification
+as part of setup; it requires the separate exact editor gate.

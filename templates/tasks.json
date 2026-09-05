@@ -17,7 +17,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Unity MCP: Import and generate solution",
+      "label": "Unity MCP: Import and generate solution (long-compile)",
       "type": "process",
       "command": "git",
       "args": [
@@ -56,6 +56,21 @@
         "unity-bash",
         "${workspaceFolder}/.unity-simple-mcp/scripts/unity.sh",
         "tests",
+        "${workspaceFolder}"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Unity MCP: Parse test results",
+      "type": "process",
+      "command": "git",
+      "args": [
+        "-c",
+        "alias.unity-bash=!bash",
+        "unity-bash",
+        "${workspaceFolder}/.unity-simple-mcp/scripts/unity.sh",
+        "parse-tests",
         "${workspaceFolder}"
       ],
       "group": "build",

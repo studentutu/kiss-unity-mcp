@@ -65,6 +65,8 @@ Open the project in VS Code and choose **Terminal > Run Task > Unity MCP**.
 If the project already had tasks, open its generated
 `.vscode/unity-simple-mcp.code-workspace` to access the additional tasks (copy them to your `.vscode/tasks.json` in case you don't want to override it, but need them).
 Use **Check tool paths**, **Import and generate solution**, then **Fast MSBuild**.
+Use **EditMode tests** to run all tests, or **Parse test results** to inspect
+existing NUnit XML and the matching Unity log without launching Unity.
 **Open tool settings** opens the one configuration file. It uses VS Code's `code`
 CLI; if that CLI is not on PATH, open `.unity-simple-mcp/tools.env` in the Explorer.
 
@@ -83,6 +85,9 @@ Commands work from another directory when given an explicit project path. The
 installed scripts do not depend on the marketplace cache or this checkout.
 Windows tasks launch through Git's temporary Bash alias to avoid the Windows WSL
 `bash.exe` launcher. `git` must be on PATH. Use Git Bash, not WSL, for Windows Unity.
+
+For already set projects, deliberately merge the new task from the templates
+into their existing tasks/workspace. Verify that setup command was successful and that user can run task from within the bash shell and reach unity compilation.
 
 ## Select tools per project
 
@@ -151,6 +156,20 @@ compile / import failure, and `2` failed or inconclusive tests. No discovered te
 is a failure. `FAIL_ON_SKIPPED=1` also rejects skipped tests.
 
 ## Agent and repository development
+
+### End-user task skills
+
+The [skill catalog](skills/README.md) exposes the seven actions in
+`templates/tasks.json`: tool-path checks, import, fast MSBuild, EditMode tests,
+parsing saved test results, shader compilation, and tool settings, plus the
+[explicit one-time setup skill](skills/unity-simple-mcp-setup/SKILL.md). Each includes
+manual usage, prerequisites, and evidence to check; MCP is optional. Start with the
+[shared manual workflow](skills/manual-workflow.md) for absolute paths, VS Code,
+CI/SSH usage, and the exact editor gate. Setup is the sole non-task skill and never
+a routine preamble. The
+[run-parsetests skill](skills/unity-simple-mcp-run-parsetests/SKILL.md) uses the
+same `parse-tests` action as the manual task. Compatibility wrappers and repository
+maintenance remain documented manual APIs, not skills.
 
 MCP exposes inspection, explicit setup, doctor, import, fast build, tests, and
 shader checks. It is a thin sequential adapter over the same Bash API, using

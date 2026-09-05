@@ -13,6 +13,61 @@ expect_exit() {
   if (( actual!=expected )); then cat "$work/last.log" >&2; fail "Expected exit $expected, got $actual: $*"; fi
   checks=$((checks+1))
 }
+
+# Validate task skills plus the setup exception in an isolated copy.
+validation_root="$work/Plugin validation"
+mkdir "$validation_root"
+cp -R "$root/.codex-plugin" "$root/.agents" "$root/.mcp.json" "$root/scripts" \
+  "$root/templates" "$root/com.studentutu.unitysimplemcp" "$root/CI" \
+  "$root/bash" "$root/skills" "$validation_root/"
+validator="$validation_root/scripts/validate-plugin.sh"
+skill="$validation_root/skills/unity-simple-mcp-doctor/SKILL.md"
+cp "$skill" "$work/doctor-skill.md"
+expect_exit 0 bash "$validator"
+setup_skill="$validation_root/skills/unity-simple-mcp-setup"
+mv "$setup_skill" "$work/setup-skill"
+expect_exit 1 bash "$validator"
+grep -qF 'Missing required setup skill' "$work/last.log" || fail 'Missing setup skill accepted'
+mv "$work/setup-skill" "$setup_skill"
+cp "$setup_skill/SKILL.md" "$work/setup-skill.md"
+printf '\nTask: Unity MCP: Check tool paths\n' >> "$setup_skill/SKILL.md"
+expect_exit 1 bash "$validator"
+grep -qF 'Setup skill must remain separate from VS Code tasks' "$work/last.log" || fail 'Setup claimed a task'
+cp "$work/setup-skill.md" "$setup_skill/SKILL.md"
+expect_exit 0 bash "$validator"
+sed 's/^name: unity-simple-mcp-doctor$/name: wrong-name/' "$work/doctor-skill.md" > "$skill"
+expect_exit 1 bash "$validator"
+grep -qF 'Skill name must match directory' "$work/last.log" || fail 'Wrong skill-name diagnostic'
+printf '%s\n' '---' 'name: unity-simple-mcp-doctor' 'description: Missing closing delimiter' > "$skill"
+expect_exit 1 bash "$validator"
+grep -qF 'Invalid skill frontmatter' "$work/last.log" || fail 'Unclosed skill frontmatter accepted'
+cp "$work/doctor-skill.md" "$skill"
+sed '/^## Manual usage$/d' "$work/doctor-skill.md" > "$skill"
+expect_exit 1 bash "$validator"
+grep -qF 'Missing ## Manual usage' "$work/last.log" || fail 'Missing manual usage accepted'
+cp "$work/doctor-skill.md" "$skill"
+printf '\n```bash\nif then\n```\n' >> "$skill"
+expect_exit 1 bash "$validator"
+grep -qF 'Invalid Bash example' "$work/last.log" || fail 'Invalid manual Bash example accepted'
+cp "$work/doctor-skill.md" "$skill"
+sed 's/^Task: .*/Task: Unity MCP: Internal maintenance/' "$work/doctor-skill.md" > "$skill"
+expect_exit 1 bash "$validator"
+grep -qF 'Skill task is not in templates/tasks.json' "$work/last.log" || fail 'Non-task skill accepted'
+cp "$work/doctor-skill.md" "$skill"
+sed 's/^Task: .*/Task: Unity MCP: Fast MSBuild/' "$work/doctor-skill.md" > "$skill"
+expect_exit 1 bash "$validator"
+grep -qF 'End-user task must have exactly one skill' "$work/last.log" || fail 'Duplicate task skills accepted'
+cp "$work/doctor-skill.md" "$skill"
+mv "$validation_root/skills/unity-simple-mcp-doctor" "$work/doctor-skill"
+expect_exit 1 bash "$validator"
+grep -qF 'End-user task must have exactly one skill' "$work/last.log" || fail 'Missing task skill accepted'
+mv "$work/doctor-skill" "$validation_root/skills/unity-simple-mcp-doctor"
+mv "$validation_root/skills/unity-simple-mcp-doctor/agents/openai.yaml" "$work/doctor-ui.yaml"
+expect_exit 1 bash "$validator"
+grep -qF 'Missing skill UI metadata' "$work/last.log" || fail 'Missing skill UI metadata accepted'
+mv "$work/doctor-ui.yaml" "$validation_root/skills/unity-simple-mcp-doctor/agents/openai.yaml"
+expect_exit 0 bash "$validator"
+
 project="$work/Project with spaces"
 mkdir -p "$project/Assets" "$project/Packages" "$project/ProjectSettings"
 printf 'm_EditorVersion: 6000.3.15f1\r\n' > "$project/ProjectSettings/ProjectVersion.txt"
@@ -109,10 +164,75 @@ sed 's/total="1"/total="2"/' "$work/results.xml" > "$work/inconsistent.xml"
 expect_exit 1 awk -f "$root/CI/bash/nunit-summary.awk" "$work/inconsistent.xml"
 printf 'Test run completed. Exiting with code 0\n' > "$work/editor.log"
 expect_exit 0 bash "$root/CI/bash/parseTestErrors.sh" --test-results "$work/results.xml" --unity-log "$work/editor.log"
+# Manual installed CLI and compatibility aliases must parse without an editor.
+expect_exit 0 bash "$project2/.unity-simple-mcp/scripts/unity.sh" help
+expect_exit 0 bash "$project2/.unity-simple-mcp/scripts/unity.sh" parse-tests "$project2" --test-results "$work/results.xml" --unity-log "$work/editor.log"
+expect_exit 0 bash "$project2/.unity-simple-mcp/CI/bash/runParsetests.sh" --test-results "$work/results.xml" --unity-log "$work/editor.log"
+expect_exit 0 bash "$root/bash/parseTestErrors.sh" --test-results "$work/results.xml" --unity-log "$work/editor.log"
+expect_exit 0 bash "$root/bash/runParsetests.sh" --test-results "$work/results.xml" --unity-log "$work/editor.log"
 sed 's/result="Passed"/result="Failed"/g;s/passed="1"/passed="0"/;s/failed="0"/failed="1"/' "$work/results.xml" > "$work/failed.xml"
 expect_exit 2 bash "$root/CI/bash/parseTestErrors.sh" --test-results "$work/failed.xml" --unity-log "$work/editor.log"
 sed 's/result="Failed"/result="Failed(Child)"/' "$work/failed.xml" > "$work/child-failed.xml"
 expect_exit 2 bash "$root/CI/bash/parseTestErrors.sh" --test-results "$work/child-failed.xml" --unity-log "$work/editor.log"
+
+# Execute the actual manual task definitions, substituting VS Code variables as
+# data. No eval, installed editor, or test execution is involved.
+run_parse_task() (
+  unset CI_OUTPUT_DIR UNITY_TEST_RESULTS_PATH UNITY_TEST_LOG_PATH UNITY_DIAGNOSTICS_PATH FAIL_ON_SKIPPED
+  export UNITY_EDITOR_PATH="$work/missing-editor" RIDER_MSBUILD="$work/missing-msbuild"
+  cd "$work"
+  "${task_command[@]}"
+)
+cmp -s "$root/templates/tasks.json" "$project/.unity-simple-mcp/tasks.json" || fail 'Installed task template differs'
+for task_file in "$project/.vscode/tasks.json" "$project2/.vscode/unity-simple-mcp.code-workspace" "$root/.vscode/tasks.json"; do
+  task_list=/tasks; task_project="$project"; workspace_folder="$project"
+  case "$task_file" in
+    *.code-workspace) task_list=/tasks/tasks; task_project="$project2"; workspace_folder="$project2";;
+    "$root/.vscode/tasks.json") task_project="$project2"; workspace_folder="$root";;
+  esac
+  json_get "$task_file" '' validate || fail "Invalid manual task JSON: $task_file"
+  task_index=0; parse_task=''
+  while task_label="$(json_get "$task_file" "$task_list/$task_index/label" 2>/dev/null)"; do
+    if [[ "$task_label" == 'Unity MCP: Parse test results' ]]; then
+      [[ -z "$parse_task" ]] || fail "Duplicate parse task: $task_file"
+      parse_task="$task_list/$task_index"
+    fi
+    task_index=$((task_index+1))
+  done
+  [[ -n "$parse_task" ]] || fail "Missing parse task: $task_file"
+  [[ "$(json_get "$task_file" "$parse_task/type")" == process &&
+     "$(json_get "$task_file" "$parse_task/command")" == git &&
+     "$(json_get "$task_file" "$parse_task/args/4")" == parse-tests ]] || fail "Parse task must use Git Bash and parse-tests: $task_file"
+  [[ "$(json_get "$task_file" "$parse_task/args/3")" == '${workspaceFolder}/'*scripts/unity.sh ]] || fail "Parse task bypasses dispatcher: $task_file"
+  if json_get "$task_file" "$parse_task/dependsOn" >/dev/null 2>&1; then fail "Parse task must not start another task: $task_file"; fi
+  task_command=("$(json_get "$task_file" "$parse_task/command")")
+  argument_index=0
+  while argument="$(json_get "$task_file" "$parse_task/args/$argument_index" 2>/dev/null)"; do
+    argument="${argument//'${workspaceFolder}'/$workspace_folder}"
+    argument="${argument//'${input:unityProject}'/$task_project}"
+    task_command+=("$argument")
+    argument_index=$((argument_index+1))
+  done
+  task_output="$task_project/Logs/SimpleUnityMcp"
+  mkdir -p "$task_output"
+  cp "$work/editor.log" "$task_output/UnityTests.log"
+  cp "$work/results.xml" "$task_output/CITestOutput.xml"
+  expect_exit 0 run_parse_task
+  grep -qF 'Test result and Unity log are valid.' "$work/last.log" || fail 'Parse task missed success evidence'
+  cp "$work/failed.xml" "$task_output/CITestOutput.xml"
+  expect_exit 2 run_parse_task
+  cp "$work/truncated.xml" "$task_output/CITestOutput.xml"
+  expect_exit 1 run_parse_task
+  cp "$work/results.xml" "$task_output/CITestOutput.xml"
+  rm "$task_output/UnityTests.log"
+  expect_exit 1 run_parse_task
+  cp "$work/editor.log" "$task_output/UnityTests.log"
+  expect_exit 0 run_parse_task
+  cmp -s "$work/results.xml" "$task_output/CITestOutput.xml" &&
+    cmp -s "$work/editor.log" "$task_output/UnityTests.log" || fail 'Parse task changed its inputs'
+  [[ -f "$task_output/CompileErrorsAfterUnityRun.txt" && ! -s "$task_output/CompileErrorsAfterUnityRun.txt" ]] || fail 'Parse task diagnostics missing or dirty'
+done
+
 printf 'Error: Import failed\n' >> "$work/editor.log"
 expect_exit 1 bash "$root/CI/bash/parseTestErrors.sh" --test-results "$work/failed.xml" --unity-log "$work/editor.log"
 

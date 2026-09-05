@@ -35,7 +35,9 @@ copy before swapping it into the consumer project's `Packages/` directory.
 - Manual API: `scripts/unity.sh <doctor|import|build|tests|shaders|parse-tests> <project>`
 - Plugin validation: `scripts/validate-plugin.sh`
 - Workflow regression tests: `scripts/test-workflow.sh`
-- Setup skill: `skills/unity-simple-mcp-setup/SKILL.md`
+- End-user task skills and manual workflow: `skills/README.md`, `skills/manual-workflow.md`
+- Skill scope: actions exposed by `templates/tasks.json`, plus explicit one-time setup
+  in `skills/unity-simple-mcp-setup/SKILL.md`; no maintenance or compatibility skills.
 - Unity package: `com.studentutu.unitysimplemcp/`
 - Unity CI: `CI/bash/`
 
@@ -62,7 +64,7 @@ Do not duplicate the authoritative `CI/bash` implementation under `scripts/`.
 ## Prerequisite: resolve the exact Unity editor
 
 This gate is mandatory before every Unity-backed tool call. It is not needed for
-the filesystem-only inspect/setup workflow.
+filesystem-only inspect/setup or parsing existing test artifacts without Unity.
 
 Read the target project's `ProjectSettings/ProjectVersion.txt`, extract its
 exact `m_EditorVersion`, and scan the platform's Unity Hub editor root:
@@ -95,7 +97,7 @@ Run repository commands only through these entry points:
 | Long Unity compile/import | `bash ./CI/bash/rebuildSolutionFromUnityItself.sh` | `Logs/SimpleUnityMcp/UnityCompile.log`, diagnostics, `PROJECT_FILES_SYNCED` |
 | Quick C# follow-up | `bash ./CI/bash/rebuildSolutionWithRiderMsBuild.sh` | `Logs/SimpleUnityMcp/RiderMsBuild.log`, diagnostics |
 | EditMode tests | `bash ./CI/bash/runTestsBash.sh` | `Logs/SimpleUnityMcp/UnityTests.log`, fresh NUnit XML |
-| Test parse only | `bash ./CI/bash/parseTestErrors.sh` | Parsed current log/XML |
+| Test parse only | `bash ./CI/bash/parseTestErrors.sh` | Parsed existing log/XML; no new Unity run |
 | Shader compile | `bash ./CI/bash/compileShaders.sh` | `Logs/SimpleUnityMcp/UnityShaders.log`, diagnostics, pass marker |
 
 Logs and diagnostics live in `<project>/Logs/SimpleUnityMcp/` by default.
@@ -124,7 +126,9 @@ Add one thin vertical slice at a time:
 3. Add or extend one wrapper under `CI/bash`; do not invoke Unity with ad-hoc
    command lines.
 4. If the capability belongs on the plugin surface, expose one narrowly scoped
-   MCP tool and update the setup skill only when its decisions change.
+   MCP tool. Add a skill only for an end-user action in `templates/tasks.json`;
+   explicit one-time setup is the sole exception. Update its skill and manual
+   setup instructions only when their decisions change.
 5. Red/green test intentional failure and restored success. Stale artifacts may
    never satisfy verification.
 

@@ -1,3 +1,3 @@
 interface:
-  display_name: "Unity Simple MCP"
-  short_description: "Set up and run Unity/Rider Bash tools"
+  display_name: "Unity MCP Setup"
+  short_description: "Inspect and explicitly install project tooling"
