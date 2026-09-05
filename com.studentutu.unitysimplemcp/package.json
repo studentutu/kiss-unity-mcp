@@ -4,17 +4,12 @@
   "version": "0.5.0",
   "unity": "2023.1",
   "description": "Simple and minimal unity MCP for buildings, testing, and verifying code and shaders.",
-  "dependencies": {
-    "com.unity.addressables": "2.9.1",
-    "com.unity.scriptablebuildpipeline": "2.6.1",
-    "com.unity.test-framework": "1.6.0"
-  },
+  "dependencies": {},
   "author": {
     "name": "Roman",
     "url": "https://github.com/studentutu",
     "email": "studentutu@email.com"
   },
-  "changelogUrl": "https://example.com/changelog.html",
-  "documentationUrl": "https://example.com/",
-  "licensesUrl": "https://example.com/licensing.html"
+  "changelogUrl": "https://github.com/studentutu/unity-simple-mcp/blob/master/com.studentutu.unitysimplemcp/CHANGELOG.md",
+  "documentationUrl": "https://github.com/studentutu/unity-simple-mcp/blob/master/com.studentutu.unitysimplemcp/README.md"
 }

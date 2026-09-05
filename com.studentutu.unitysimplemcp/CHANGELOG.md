@@ -8,4 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### This is the first release of *\<unitysimplemcp\>*.
 
-*Short description of this release*
+Simple and minimal unity MCP for buildings, testing, and verifying code and shaders.
+Verified minimal package for full-unity-forced recompilation, all shader-recompilation.
+All error logs are properly logged and never skipped.
+Actual log.file is authority for the bash process.

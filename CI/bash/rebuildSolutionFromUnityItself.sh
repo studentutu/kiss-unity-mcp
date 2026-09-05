@@ -9,6 +9,10 @@ source "$SCRIPT_DIR/unity-ci-common.sh"
 require_unity_project
 
 UNITY_EDITOR="$(resolve_unity_editor)"
+export UNITY_EDITOR_PATH="$UNITY_EDITOR"
+require_closed_editor
+acquire_run_lock
+prepare_output_file "$CI_OUTPUT_DIR/ImportSnapshot.txt"
 UNITY_LOG="$(to_unix_path "${UNITY_COMPILE_LOG_PATH:-$CI_OUTPUT_DIR/UnityCompile.log}")"
 DIAGNOSTICS_FILE="$(to_unix_path "${UNITY_DIAGNOSTICS_PATH:-$CI_OUTPUT_DIR/CompileErrorsAfterUnityRun.txt}")"
 SUCCESS_MARKER="SIMPLE_UNITY_MCP_CI:PROJECT_FILES_SYNCED"
@@ -26,8 +30,8 @@ set +e
   -nographics \
   -projectPath "$UNITY_PROJECT_PATH" \
   -logFile "$UNITY_LOG" \
-  -executeMethod SimpleUnityMCP.Editor.CiTools.RegenerateProjectFilesAndExit \
-  -quit
+  -stackTraceLogType Full \
+  -executeMethod SimpleUnityMCP.Editor.CiTools.RegenerateProjectFilesAndExit
 unity_exit_code=$?
 set -e
 
@@ -58,4 +62,7 @@ if (( status != 0 )); then
   exit "$status"
 fi
 
+SOLUTION="$(resolve_solution)"
+require_nonempty_file "$SOLUTION" 'Generated Unity solution'
+write_import_snapshot
 printf 'Unity compilation and IDE project generation passed.\n'

@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "unity_simple_mcp": {
+      "command": "git",
+      "args": [
+        "-c",
+        "alias.unity-bash=!f() { script=$1; shift; exec bash \"${GIT_PREFIX:-}$script\" \"$@\"; }; f",
+        "unity-bash",
+        "./scripts/mcp-server.sh"
+      ],
+      "cwd": ".",
+      "enabled": true,
+      "default_tools_approval_mode": "prompt",
+      "tools": {
+        "inspect_unity_project": {
+          "approval_mode": "approve"
+        },
+        "unity_doctor": {
+          "approval_mode": "approve"
+        },
+        "setup_unity_project": {
+          "approval_mode": "prompt"
+        }
+      },
+      "env_vars": [
+        "PATH"
+      ],
+      "startup_timeout_sec": 10,
+      "tool_timeout_sec": 1800
+    }
+  }
+}

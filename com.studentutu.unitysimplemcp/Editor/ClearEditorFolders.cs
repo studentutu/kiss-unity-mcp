@@ -6,34 +6,6 @@ namespace SimpleUnityMCP.Editor
 {
     public static class EditorFolders
     {
-        public const string AddressableAssetDataFolder = "AddressableAssetsData";
-
-        // From official addressables ChangeLog.md:
-        // The addressables_content_state.bin is built into a platform specific folder within Assets/AddressableAssetsData/.
-        // We recommend deleting the addressables_content_state.bin in Assets/AddressableAssetsData to avoid future confusion.
-        public static void ClearAddressableAssetFolder()
-        {
-            CleanFileUnderDirectory(AddressableAssetDataFolder, "addressables_content_state.bin");
-        }
-
-        private static void CleanFileUnderDirectory(string pathToFolderUnderAssets,
-            string addressablesContentStateBin)
-        {
-            var assetsFolder = Application.dataPath;
-
-            var path = Path.Combine(assetsFolder, pathToFolderUnderAssets);
-            path = path.Replace("\\", "/");
-
-            if (Directory.Exists(path))
-            {
-                var directoryInfo = new DirectoryInfo(path);
-                foreach (var file in directoryInfo.EnumerateFiles())
-                    if (file.Name.StartsWith(addressablesContentStateBin,
-                            StringComparison.InvariantCultureIgnoreCase))
-                        file.Delete();
-            }
-        }
-
         /// <summary>
         ///   Clear directory under Assets recursively.
         /// </summary>
@@ -41,8 +13,12 @@ namespace SimpleUnityMCP.Editor
         {
             var assetsFolder = Application.dataPath;
 
-            var path = Path.Combine(assetsFolder, pathToFolderUnderAssets);
-            path = path.Replace("\\", "/");
+            if (string.IsNullOrWhiteSpace(pathToFolderUnderAssets) || Path.IsPathRooted(pathToFolderUnderAssets))
+                throw new ArgumentException("Specify a child directory under Assets.", nameof(pathToFolderUnderAssets));
+            var path = Path.GetFullPath(Path.Combine(assetsFolder, pathToFolderUnderAssets));
+            var prefix = Path.GetFullPath(assetsFolder) + Path.DirectorySeparatorChar;
+            if (!path.StartsWith(prefix, StringComparison.Ordinal))
+                throw new ArgumentException("Directory must remain under Assets.", nameof(pathToFolderUnderAssets));
 
             if (Directory.Exists(path))
                 CleanDirectory(new(path));
@@ -53,11 +29,31 @@ namespace SimpleUnityMCP.Editor
         /// </summary>
         public static void CleanDirectory(DirectoryInfo di)
         {
+            for (var ancestor = di; ancestor != null; ancestor = ancestor.Parent)
+                RejectLink(ancestor);
+            ValidateTree(di);
             foreach (var file in di.EnumerateFiles())
                 file.Delete();
 
             foreach (var dir in di.EnumerateDirectories())
                 dir.Delete(recursive: true);
+        }
+
+        private static void RejectLink(FileSystemInfo entry)
+        {
+            if ((entry.Attributes & FileAttributes.ReparsePoint) != 0)
+                throw new IOException($"Refusing to clean a linked path: {entry.FullName}");
+        }
+
+        private static void ValidateTree(DirectoryInfo directory)
+        {
+            // Do not traverse a link even during the read-only validation pass.
+            foreach (var entry in directory.EnumerateFileSystemInfos())
+            {
+                RejectLink(entry);
+                if (entry is DirectoryInfo child)
+                    ValidateTree(child);
+            }
         }
     }
 }

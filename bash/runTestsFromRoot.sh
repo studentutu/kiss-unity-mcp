@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
-
-# set -x
-set -e
-
-# cd Assets/Scripts/Runtime/Editor/AllTests
-echo $PWD
-
-./runTestsBash.sh
+# Compatibility entry point; CI/bash is authoritative.
+set -euo pipefail
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+exec bash "$SCRIPT_DIR/../CI/bash/runTestsFromRoot.sh" "$@"

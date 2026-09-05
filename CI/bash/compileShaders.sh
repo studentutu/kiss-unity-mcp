@@ -9,6 +9,9 @@ source "$SCRIPT_DIR/unity-ci-common.sh"
 require_unity_project
 
 UNITY_EDITOR="$(resolve_unity_editor)"
+export UNITY_EDITOR_PATH="$UNITY_EDITOR"
+require_closed_editor
+acquire_run_lock
 UNITY_LOG="$(to_unix_path "${UNITY_SHADER_LOG_PATH:-$CI_OUTPUT_DIR/UnityShaders.log}")"
 DIAGNOSTICS_FILE="$(to_unix_path "${UNITY_SHADER_DIAGNOSTICS_PATH:-$CI_OUTPUT_DIR/ShaderCompileErrors.txt}")"
 SUCCESS_MARKER="SIMPLE_UNITY_MCP_CI:SHADER_COMPILATION_PASSED"
@@ -24,6 +27,7 @@ set +e
 "$UNITY_EDITOR" \
   -batchmode \
   -nographics \
+  -stackTraceLogType Full \
   -projectPath "$UNITY_PROJECT_PATH" \
   -logFile "$UNITY_LOG" \
   -executeMethod SimpleUnityMCP.Editor.ShaderCompileTool.CompileAllProjectShaders

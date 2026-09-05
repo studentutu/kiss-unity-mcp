@@ -1,201 +1,132 @@
 # Agent workflow
 
-Use `rg` for search. Keep changes surgical. Verify through the repository entry
-points below; do not call Unity or MSBuild with ad-hoc paths.
+This repository is both a Codex plugin and the source of the embedded Unity
+package `com.studentutu.unitysimplemcp`. Keep the plugin boundary and the Unity
+package boundary separate.
 
-## Prerequisite: resolve the Unity editor
+## Non-negotiable setup contract
 
-Before any CI/tool workflow, read the project's required Unity version and scan
-the platform's Unity Hub editor root. This is mandatory before every Unity-backed
-tool call. Never assume `Unity` is on `PATH`, and never substitute the newest or
-closest installed version for the project's exact `m_EditorVersion`.
+- Project setup is explicit and runs once per Unity project. Never run it as a
+  routine preamble to Unity work.
+- Inspect first with `inspect_unity_project` or
+  `bash scripts/setup-unity-project.sh <project> --dry-run`.
+- Setup writes the selected project's `Packages/com.studentutu.unitysimplemcp`,
+  `.unity-simple-mcp/` (Bash tools and `tools.env`),
+  `ProjectSettings/SimpleUnityMcpSetup.json`, and the dedicated VS Code workspace.
+  Create `.vscode/tasks.json` only when absent; preserve existing tasks and tool settings.
+  Temporary setup locks/staging and replacement backups remain within the project.
+- An identical package is a no-op. A conflicting destination is a hard stop.
+  Use `--replace` only after the user explicitly requests replacement.
+- Setup is filesystem-only. It must not open Unity, edit `Packages/manifest.json`,
+  mutate unrelated project settings. Install the authoritative `CI/bash` into
+  `.unity-simple-mcp/CI/bash` so manual use survives marketplace cache removal.
 
-| Platform | Unity Hub editor root | Editor executable below the version directory |
+The package source is `com.studentutu.unitysimplemcp/`. Do not create a second
+copy inside the plugin repository. The setup implementation stages and hashes a
+copy before swapping it into the consumer project's `Packages/` directory.
+
+## Repository entry points
+
+- Plugin metadata: `.codex-plugin/plugin.json`
+- Marketplace catalog: `.agents/plugins/marketplace.json`
+- Bundled MCP configuration: `.mcp.json`
+- MCP server: `scripts/mcp-server.sh` (thin stdio adapter)
+- Setup CLI: `scripts/setup-unity-project.sh`
+- Manual API: `scripts/unity.sh <doctor|import|build|tests|shaders|parse-tests> <project>`
+- Plugin validation: `scripts/validate-plugin.sh`
+- Workflow regression tests: `scripts/test-workflow.sh`
+- Setup skill: `skills/unity-simple-mcp-setup/SKILL.md`
+- Unity package: `com.studentutu.unitysimplemcp/`
+- Unity CI: `CI/bash/`
+
+Use `rg` for search. Keep changes surgical. Runtime tooling uses Bash 3.2+,
+Git and standard Unix utilities bundled with Git Bash / macOS / Linux.
+No Node, Python, jq, GNU-awk-only features, downloaded runtimes or packages.
+Do not duplicate the authoritative `CI/bash` implementation under `scripts/`.
+
+## Marketplace release contract
+
+- The repository is the `studentutu` marketplace and the Git-backed
+  `unity-simple-mcp` plugin source.
+- Keep the plugin at the repository root. The marketplace entry uses the remote
+  repository URL with `source: "url"`; do not create a duplicate plugin copy
+  under `plugins/`.
+- `master` is the published source ref. Feature branches are not releases.
+- Keep `.codex-plugin/plugin.json` and
+  `com.studentutu.unitysimplemcp/package.json` versions identical.
+- Run `bash scripts/validate-plugin.sh` before publishing. Merge and push the
+  verified commit before asking users to upgrade the marketplace.
+- Do not mutate a developer's Codex marketplace configuration as part of normal
+  repository validation. Installation is an explicit user action.
+
+## Prerequisite: resolve the exact Unity editor
+
+This gate is mandatory before every Unity-backed tool call. It is not needed for
+the filesystem-only inspect/setup workflow.
+
+Read the target project's `ProjectSettings/ProjectVersion.txt`, extract its
+exact `m_EditorVersion`, and scan the platform's Unity Hub editor root:
+
+| Platform | Unity Hub editor root | Executable below the version directory |
 | --- | --- | --- |
 | macOS | `/Applications/Unity/Hub/Editor` | `Unity.app/Contents/MacOS/Unity` |
 | Windows (Git Bash) | `/c/Program Files/Unity/Hub/Editor` | `Editor/Unity.exe` |
 | Linux | `~/Unity/Hub/Editor` | `Editor/Unity` |
 
-Run this once at the start of the workflow. It lists every installed editor,
-requires an exact project-version match, and gives all later scripts one explicit
-editor path:
+List every installed editor. Require an exact directory match for the project's
+version and export that executable as `UNITY_EDITOR_PATH`. Never assume `Unity`
+is on `PATH` and never substitute the newest or closest installed editor. If the
+exact version is absent, stop and report the required and installed versions.
 
-```bash
-unity_project="${UNITY_PROJECT_PATH:-./UnityProj}"
-version_file="$unity_project/ProjectSettings/ProjectVersion.txt"
-required_version="$(sed -n 's/^m_EditorVersion:[[:space:]]*//p' "$version_file" | tr -d '\r' | head -n 1)"
+Do not start Unity, MSBuild, tests, shader compilation, or another Unity-driven
+tool until this gate passes. Close an interactive Unity instance for the same
+project before launching a headless process.
 
-case "$(uname -s)" in
-  Darwin*) unity_hub_root="/Applications/Unity/Hub/Editor"; editor_suffix="Unity.app/Contents/MacOS/Unity" ;;
-  MINGW*|MSYS*|CYGWIN*) unity_hub_root="/c/Program Files/Unity/Hub/Editor"; editor_suffix="Editor/Unity.exe" ;;
-  Linux*) unity_hub_root="$HOME/Unity/Hub/Editor"; editor_suffix="Editor/Unity" ;;
-  *) printf 'Unsupported host OS: %s\n' "$(uname -s)" >&2; exit 1 ;;
-esac
+## Verification API
 
-[[ -n "$required_version" ]] || { printf 'Missing m_EditorVersion in %s\n' "$version_file" >&2; exit 1; }
-[[ -d "$unity_hub_root" ]] || { printf 'Unity Hub editor root not found: %s\n' "$unity_hub_root" >&2; exit 1; }
+Run repository commands only through these entry points:
 
-shopt -s nullglob
-installed_editors=("$unity_hub_root"/*)
-shopt -u nullglob
-printf 'Installed Unity editors under %s:\n' "$unity_hub_root"
-((${#installed_editors[@]})) && printf '  %s\n' "${installed_editors[@]##*/}"
+| Intent | Command | Evidence |
+| --- | --- | --- |
+| Plugin and skill structure | `bash scripts/validate-plugin.sh` | Validator exit `0` |
+| Setup behavior and portable contracts | `bash scripts/test-workflow.sh` | Regression suite exit `0` |
+| Real failure/restoration checks | `bash scripts/verify-unity-workflow.sh <disposable-project>` | Per-step full logs, process exits, `UNITY_WORKFLOW_VERIFIED` |
+| Setup behavior | `bash scripts/setup-unity-project.sh <temp-project>` | JSON action/state plus copied digest |
+| Long Unity compile/import | `bash ./CI/bash/rebuildSolutionFromUnityItself.sh` | `Logs/SimpleUnityMcp/UnityCompile.log`, diagnostics, `PROJECT_FILES_SYNCED` |
+| Quick C# follow-up | `bash ./CI/bash/rebuildSolutionWithRiderMsBuild.sh` | `Logs/SimpleUnityMcp/RiderMsBuild.log`, diagnostics |
+| EditMode tests | `bash ./CI/bash/runTestsBash.sh` | `Logs/SimpleUnityMcp/UnityTests.log`, fresh NUnit XML |
+| Test parse only | `bash ./CI/bash/parseTestErrors.sh` | Parsed current log/XML |
+| Shader compile | `bash ./CI/bash/compileShaders.sh` | `Logs/SimpleUnityMcp/UnityShaders.log`, diagnostics, pass marker |
 
-unity_editor="$unity_hub_root/$required_version/$editor_suffix"
-[[ -x "$unity_editor" ]] || {
-  printf 'Required Unity %s is not installed at %s\n' "$required_version" "$unity_editor" >&2
-  exit 1
-}
-export UNITY_EDITOR_PATH="$unity_editor"
-```
+Logs and diagnostics live in `<project>/Logs/SimpleUnityMcp/` by default.
+All tool selections live in `<project>/.unity-simple-mcp/tools.env`; explicit
+environment overrides take precedence. This file is parsed as data, never sourced.
 
-If the exact editor is absent, stop and report the required and installed versions.
-Do not start `process_task`, Unity, MSBuild, tests, shader compilation, or a new
-Unity-driven tool call until this gate passes.
+The quick MSBuild path is valid only when generated solution files are current
+and no script, asmdef, package, shader, or asset was added or removed. Unity
+commands succeed only when the process exit, fresh non-empty log, expected
+marker/artifact, and extracted diagnostics all agree. Tests also require valid
+NUnit XML, at least one discovered test, and a passing root `test-run`.
 
-## CI quick reference
+Exit codes are API: `0` verified success, `1` tool/compile/infrastructure
+failure, and `2` failed or inconclusive tests. Read the named logs and diagnostic
+artifacts on failure. Do not classify every line containing `Error` as fatal;
+use the existing script classifier.
 
-Run commands from the repository root. Direct Bash and the matching VS Code task
-execute the same script. VS Code uses the portable transport
-`git -c alias.run-bash=!bash run-bash <script>` so Git for Windows selects its
-bundled Bash without a hard-coded installation path.
+## Evolution rules
 
-| Intent | Bash command | Cost and use | Evidence |
-|---|---|---|---|
-| Quick C# compile | `bash ./CI/bash/rebuildSolutionWithRiderMsBuild.sh` | Fast. Use only when the generated solution is current and no `.cs`, asmdef, package, shader, or asset was added/removed. | `CI/RiderMsBuild.log`, `CI/CompileErrorsAfterUnityRun.txt` |
-| Long Unity compile/import | `bash ./CI/bash/rebuildSolutionFromUnityItself.sh` | Authoritative after new/deleted script/asmdef/package/asset changes. Regenerates IDE files. Close this project's interactive Unity editor first. | `CI/UnityCompile.log`, `CI/CompileErrorsAfterUnityRun.txt`, `PROJECT_FILES_SYNCED` marker |
-| Test run | `bash ./CI/bash/runTestsBash.sh` | Launches Unity EditMode tests and immediately parses the fresh result. Close this project's editor first. | `CI/UnityTests.log`, `CI/CITestOutput.xml`, terminal summary |
-| Test parse only | `bash ./CI/bash/parseTestErrors.sh` | Fast; does not launch Unity. Re-checks the most recent test log/XML and prints failed test details. | Reads `CI/UnityTests.log` and `CI/CITestOutput.xml`; updates `CI/CompileErrorsAfterUnityRun.txt` |
-| Long shader compile | `bash ./CI/bash/compileShaders.sh` | Reimports and validates every project shader. Use after shader/HLSL changes. Close this project's editor first. | `CI/UnityShaders.log`, `CI/ShaderCompileErrors.txt`, `SHADER_COMPILATION_PASSED` marker |
+Add one thin vertical slice at a time:
 
-Exit codes are part of the API: `0` means verified success, `1` means tool,
-compile, log, or infrastructure failure, and `2` means failed/inconclusive tests.
-Never report success from terminal appearance alone. Generated CI artifacts are
-ignored by Git and must be fresh for the current process invocation.
+1. Put reusable editor behavior under
+   `com.studentutu.unitysimplemcp/Editor` with a stable fully qualified method.
+2. Emit one stable pass/fail marker and preserve real process exit codes. Persist
+   reload-spanning state with `SessionState`.
+3. Add or extend one wrapper under `CI/bash`; do not invoke Unity with ad-hoc
+   command lines.
+4. If the capability belongs on the plugin surface, expose one narrowly scoped
+   MCP tool and update the setup skill only when its decisions change.
+5. Red/green test intentional failure and restored success. Stale artifacts may
+   never satisfy verification.
 
-More information on the specific tasks: read `CI\RunUnityTestsReadme.md`.
-
-### Agent execution contract
-
-```text
-agent tool-call / VS Code process task
-  -> Bash entry point in CI/bash
-  -> unity-ci-common.sh resolves repo, project, editor, and output paths
-  -> truncate explicit output files (stale evidence cannot pass)
-  -> run Unity/MSBuild and wait for process end
-  -> capture the real process exit code (might be un-available, then see actual full log-artifact)
-  -> require a non-empty full log plus command-specific marker/artifact
-  -> extract actionable diagnostics into CI/*.txt (from full log-artifact)
-  -> Bash exits with the verified result
-  -> agent reads terminal summary, then the named log/XML (output from artifact-lof from CI/*.txt) on any failures
-```
-
-For Unity commands, success requires all relevant signals: process exit `0`, a
-fresh non-empty real log, the expected success marker, and no extracted fatal
-diagnostics. Tests additionally require valid NUnit XML, at least one discovered
-test, and a passing root `<test-run>`. A raw search for `Error` is not sufficient:
-Unity logs recovered licensing/helper errors during successful runs, so use the
-script's classifier and preserve the complete log for investigation.
-
-Default paths can be overridden without editing scripts:
-
-```bash
-UNITY_PROJECT_PATH=/path/to/UnityProject \
-UNITY_EDITOR_PATH=/path/to/Unity \
-CI_OUTPUT_DIR=/path/to/artifacts \
-bash ./CI/bash/runTestsBash.sh
-```
-
-## Adding a new tool call
-
-Example of adding unity-driven tool call:
-
-Add one thin vertical slice; do not invent a framework.
-
-1. Add the editor method under
-   `UnityProj/Packages/com.studentutu.unitysimplemcp/Editor` and its existing
-   editor asmdef. Use a fully qualified stable name such as
-   `SimpleUnityMCP.Editor.BuildTool.BuildAndExit`.
-2. Make the method synchronous when possible. Emit exactly one stable pass or
-   fail marker and call `EditorApplication.Exit(0|1)`. If compilation/domain
-   reload is required, persist state with `SessionState`; normal static callbacks
-   are destroyed by reload. See `CiTools.ForceCompileAndExit`.
-3. Add one Bash wrapper only under `CI/bash`. Source `unity-ci-common.sh`, use a
-   unique full log and diagnostic file, preserve the Unity exit code, require the
-   pass marker, run `extract_unity_diagnostics`, and propagate failure.
-4. Add a VS Code `process` task using the same portable Git/Bash transport.
-5. Ignore generated artifacts, document their paths, then red/green test the
-   complete task: intentional failure must produce non-zero exit plus actionable
-   real-log evidence; restored input must produce exit `0`, pass marker, and an
-   empty diagnostic file.
-
-Minimal editor-side build shape:
-
-```csharp
-using UnityEditor;
-using UnityEditor.Build.Reporting;
-using UnityEngine;
-
-namespace SimpleUnityMCP.Editor
-{
-    public static class BuildTool
-    {
-        public const string Passed = "SIMPLE_UNITY_MCP_CI:BUILD_PASSED";
-        public const string Failed = "SIMPLE_UNITY_MCP_CI:BUILD_FAILED";
-
-        public static void BuildAndExit()
-        {
-            BuildReport report = BuildPipeline.BuildPlayer(CreateBuildOptions());
-            bool passed = report.summary.result == BuildResult.Succeeded;
-            Debug.Log($"{(passed ? Passed : Failed)} result={report.summary.result}");
-            EditorApplication.Exit(passed ? 0 : 1);
-        }
-
-        private static BuildPlayerOptions CreateBuildOptions()
-        {
-            // Project-specific scenes, target, and output belong here.
-            throw new System.NotImplementedException();
-        }
-    }
-}
-```
-
-Minimal Bash wrapper shape (copy an existing wrapper and keep this contract):
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-source "$SCRIPT_DIR/unity-ci-common.sh"
-require_unity_project
-
-UNITY_EDITOR="$(resolve_unity_editor)"
-LOG="$(to_unix_path "${UNITY_BUILD_LOG_PATH:-$CI_OUTPUT_DIR/UnityBuild.log}")"
-DIAGNOSTICS="$(to_unix_path "${UNITY_BUILD_DIAGNOSTICS_PATH:-$CI_OUTPUT_DIR/BuildErrors.txt}")"
-prepare_output_file "$LOG"
-
-set +e
-"$UNITY_EDITOR" -batchmode -nographics -projectPath "$UNITY_PROJECT_PATH" \
-  -logFile "$LOG" -executeMethod SimpleUnityMCP.Editor.BuildTool.BuildAndExit
-tool_exit=$?
-set -e
-
-require_nonempty_file "$LOG" "Unity build log"
-extract_unity_diagnostics "$LOG" "$DIAGNOSTICS"
-(( tool_exit == 0 )) || exit "$tool_exit"
-grep -qF 'SIMPLE_UNITY_MCP_CI:BUILD_PASSED' "$LOG" || exit 1
-[[ ! -s "$DIAGNOSTICS" ]] || exit 1
-```
-
-Matching VS Code task shape:
-
-```json
-{
-  "label": "Build Unity Player",
-  "type": "process",
-  "command": "git",
-  "args": ["-c", "alias.run-bash=!bash", "run-bash", "./CI/bash/buildPlayer.sh"],
-  "options": { "cwd": "${workspaceFolder}" },
-  "problemMatcher": []
-}
-```
+Avoid speculative abstraction. Keep project-specific build scenes, targets, and
+outputs outside this reusable package.

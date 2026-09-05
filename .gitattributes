@@ -1,1 +1,4 @@
 *.sh text eol=lf
+*.awk text eol=lf
+*.env text eol=lf
+*.code-workspace text eol=lf

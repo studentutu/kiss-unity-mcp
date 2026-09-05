@@ -1,0 +1,39 @@
+{
+  "name": "unity-simple-mcp",
+  "version": "0.5.0",
+  "description": "Bash-only Unity setup, verified import, fast Rider/MSBuild compilation, tests and manual VS Code actions.",
+  "author": {
+    "name": "Roman",
+    "email": "studentutu@email.com",
+    "url": "https://github.com/studentutu"
+  },
+  "homepage": "https://github.com/studentutu/unity-simple-mcp#readme",
+  "repository": "https://github.com/studentutu/unity-simple-mcp.git",
+  "keywords": [
+    "unity",
+    "game-development",
+    "fast-compile",
+    "testing",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Unity Simple MCP",
+    "shortDescription": "Unity and Rider build tools, with Bash-only setup.",
+    "longDescription": "Install the embedded Unity package and standalone Bash tools once. Select Unity and Rider per project, run manual VS Code actions or MCP tools, and verify complete editor and MSBuild logs.",
+    "developerName": "Roman",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Local"
+    ],
+    "defaultPrompt": [
+      "Check whether Unity Simple MCP is set up here.",
+      "Set up Unity Simple MCP in this Unity project.",
+      "Inspect this project's Unity Simple MCP package."
+    ],
+    "brandColor": "#222C37"
+  }
+}

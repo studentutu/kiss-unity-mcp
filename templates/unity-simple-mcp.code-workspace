@@ -1,0 +1,98 @@
+{
+  "folders": [
+    {
+      "path": ".."
+    }
+  ],
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Unity MCP: Check tool paths",
+        "type": "process",
+        "command": "git",
+        "args": [
+          "-c",
+          "alias.unity-bash=!bash",
+          "unity-bash",
+          "${workspaceFolder}/.unity-simple-mcp/scripts/unity.sh",
+          "doctor",
+          "${workspaceFolder}"
+        ],
+        "group": "build",
+        "problemMatcher": []
+      },
+      {
+        "label": "Unity MCP: Import and generate solution",
+        "type": "process",
+        "command": "git",
+        "args": [
+          "-c",
+          "alias.unity-bash=!bash",
+          "unity-bash",
+          "${workspaceFolder}/.unity-simple-mcp/scripts/unity.sh",
+          "import",
+          "${workspaceFolder}"
+        ],
+        "group": "build",
+        "problemMatcher": "$msCompile"
+      },
+      {
+        "label": "Unity MCP: Fast MSBuild",
+        "type": "process",
+        "command": "git",
+        "args": [
+          "-c",
+          "alias.unity-bash=!bash",
+          "unity-bash",
+          "${workspaceFolder}/.unity-simple-mcp/scripts/unity.sh",
+          "build",
+          "${workspaceFolder}"
+        ],
+        "group": "build",
+        "problemMatcher": "$msCompile"
+      },
+      {
+        "label": "Unity MCP: EditMode tests",
+        "type": "process",
+        "command": "git",
+        "args": [
+          "-c",
+          "alias.unity-bash=!bash",
+          "unity-bash",
+          "${workspaceFolder}/.unity-simple-mcp/scripts/unity.sh",
+          "tests",
+          "${workspaceFolder}"
+        ],
+        "group": "build",
+        "problemMatcher": []
+      },
+      {
+        "label": "Unity MCP: Compile shaders",
+        "type": "process",
+        "command": "git",
+        "args": [
+          "-c",
+          "alias.unity-bash=!bash",
+          "unity-bash",
+          "${workspaceFolder}/.unity-simple-mcp/scripts/unity.sh",
+          "shaders",
+          "${workspaceFolder}"
+        ],
+        "group": "build",
+        "problemMatcher": []
+      },
+      {
+        "label": "Unity MCP: Open tool settings",
+        "type": "process",
+        "command": "code",
+        "args": [
+          "--reuse-window",
+          "${workspaceFolder}/.unity-simple-mcp/tools.env"
+        ],
+        "group": "build",
+        "problemMatcher": []
+      }
+    ]
+  }
+}
