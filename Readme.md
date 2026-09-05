@@ -14,11 +14,11 @@ The package is the Unity boundary: reusable Bash orchestration stays in the cons
 
 All unity related MCP always skip proper manual validations/ci/different-os/tries to sell bloatware.
 
-**All you need is bash, unity and Rider(MsBuild).**
+**All you need is bash, unity and MsBuild(Rider).**
 
 Developer must have a proper control over the tools used, including:
 
-- optional override path to the tools such as unity-editor, rider(msbuild), so it will work in cases for CI/OS/headless/ssh(docker, podman).
+- optional override path to the tools such as unity-editor, MsBuild, so all of the CI/tools will work in cases for CI/cross-platform-OS/headless/ssh(docker, podman).
 - the same compilation and verification tools as is used by the agent.
 
 ## Quick Navigation
@@ -31,15 +31,14 @@ Developer must have a proper control over the tools used, including:
 
 ## Requirements
 
-- **Bash 3.2+, Git, and standard Unix
-utilities**. Git for Windows supplies these on Windows; macOS/Linux need Git and
+- **Bash 3.2+, Git, and standard Unix utilities**. Git for Windows supplies these on Windows; macOS/Linux need Git and
 Bash. No Node, Python, jq, package manager, or runtime download is used.
-- Unity Editor
-- MSBuild/Rider
+- Unity Editor (bundles with Unity Hub, or can be set via manual path)
+- MSBuild (bundled with Rider, or can be set via manual path)
 
 Optionally:
 
-- vscode for friendly developer compilation workflows.
+- VScode for friendly developer compilation workflows.
 
 ## Install
 
