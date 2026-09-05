@@ -9,14 +9,17 @@ package boundary separate.
 - Project setup is explicit and runs once per Unity project. Never run it as a
   routine preamble to Unity work.
 - Inspect first with `inspect_unity_project` or
-  `node scripts/setup-unity-project.mjs <project> --dry-run`.
-- Setup may write only the selected project's
-  `Packages/com.studentutu.unitysimplemcp` and
-  `ProjectSettings/SimpleUnityMcpSetup.json`.
+  `bash scripts/setup-unity-project.sh <project> --dry-run`.
+- Setup writes the selected project's `Packages/com.studentutu.unitysimplemcp`,
+  `.unity-simple-mcp/` (Bash tools and `tools.env`),
+  `ProjectSettings/SimpleUnityMcpSetup.json`, and the dedicated VS Code workspace.
+  Create `.vscode/tasks.json` only when absent; preserve existing tasks and tool settings.
+  Temporary setup locks/staging and replacement backups remain within the project.
 - An identical package is a no-op. A conflicting destination is a hard stop.
   Use `--replace` only after the user explicitly requests replacement.
 - Setup is filesystem-only. It must not open Unity, edit `Packages/manifest.json`,
-  copy CI scripts into the consumer, or mutate unrelated project settings.
+  mutate unrelated project settings. Install the authoritative `CI/bash` into
+  `.unity-simple-mcp/CI/bash` so manual use survives marketplace cache removal.
 
 The package source is `com.studentutu.unitysimplemcp/`. Do not create a second
 copy inside the plugin repository. The setup implementation stages and hashes a
@@ -27,18 +30,19 @@ copy before swapping it into the consumer project's `Packages/` directory.
 - Plugin metadata: `.codex-plugin/plugin.json`
 - Marketplace catalog: `.agents/plugins/marketplace.json`
 - Bundled MCP configuration: `.mcp.json`
-- MCP server: `scripts/mcp-server.mjs`
-- Setup CLI and implementation: `scripts/setup-unity-project.mjs` and
-  `scripts/unity-project.mjs`
-- Plugin validation: `scripts/validate-plugin.mjs`
+- MCP server: `scripts/mcp-server.sh` (thin stdio adapter)
+- Setup CLI: `scripts/setup-unity-project.sh`
+- Manual API: `scripts/unity.sh <doctor|import|build|tests|shaders|parse-tests> <project>`
+- Plugin validation: `scripts/validate-plugin.sh`
+- Workflow regression tests: `scripts/test-workflow.sh`
 - Setup skill: `skills/unity-simple-mcp-setup/SKILL.md`
 - Unity package: `com.studentutu.unitysimplemcp/`
 - Unity CI: `CI/bash/`
 
-Use `rg` for search. Keep changes surgical. Do not add dependencies to the MCP
-server without a demonstrated need; the current server intentionally uses only
-Node built-ins. Do not duplicate the authoritative `CI/bash` scripts into
-`scripts/`.
+Use `rg` for search. Keep changes surgical. Runtime tooling uses Bash 3.2+,
+Git and standard Unix utilities bundled with Git Bash / macOS / Linux.
+No Node, Python, jq, GNU-awk-only features, downloaded runtimes or packages.
+Do not duplicate the authoritative `CI/bash` implementation under `scripts/`.
 
 ## Marketplace release contract
 
@@ -50,7 +54,7 @@ Node built-ins. Do not duplicate the authoritative `CI/bash` scripts into
 - `master` is the published source ref. Feature branches are not releases.
 - Keep `.codex-plugin/plugin.json` and
   `com.studentutu.unitysimplemcp/package.json` versions identical.
-- Run `node scripts/validate-plugin.mjs` before publishing. Merge and push the
+- Run `bash scripts/validate-plugin.sh` before publishing. Merge and push the
   verified commit before asking users to upgrade the marketplace.
 - Do not mutate a developer's Codex marketplace configuration as part of normal
   repository validation. Installation is an explicit user action.
@@ -84,13 +88,19 @@ Run repository commands only through these entry points:
 
 | Intent | Command | Evidence |
 | --- | --- | --- |
-| Plugin and skill structure | `node scripts/validate-plugin.mjs` | Validator exit `0` |
-| Setup behavior | `node scripts/setup-unity-project.mjs <temp-project>` | JSON action/state plus copied digest |
-| Long Unity compile/import | `bash ./CI/bash/rebuildSolutionFromUnityItself.sh` | `CI/UnityCompile.log`, diagnostics, `PROJECT_FILES_SYNCED` |
-| Quick C# follow-up | `bash ./CI/bash/rebuildSolutionWithRiderMsBuild.sh` | `CI/RiderMsBuild.log`, diagnostics |
-| EditMode tests | `bash ./CI/bash/runTestsBash.sh` | `CI/UnityTests.log`, fresh NUnit XML |
+| Plugin and skill structure | `bash scripts/validate-plugin.sh` | Validator exit `0` |
+| Setup behavior and portable contracts | `bash scripts/test-workflow.sh` | Regression suite exit `0` |
+| Real failure/restoration checks | `bash scripts/verify-unity-workflow.sh <disposable-project>` | Per-step full logs, process exits, `UNITY_WORKFLOW_VERIFIED` |
+| Setup behavior | `bash scripts/setup-unity-project.sh <temp-project>` | JSON action/state plus copied digest |
+| Long Unity compile/import | `bash ./CI/bash/rebuildSolutionFromUnityItself.sh` | `Logs/SimpleUnityMcp/UnityCompile.log`, diagnostics, `PROJECT_FILES_SYNCED` |
+| Quick C# follow-up | `bash ./CI/bash/rebuildSolutionWithRiderMsBuild.sh` | `Logs/SimpleUnityMcp/RiderMsBuild.log`, diagnostics |
+| EditMode tests | `bash ./CI/bash/runTestsBash.sh` | `Logs/SimpleUnityMcp/UnityTests.log`, fresh NUnit XML |
 | Test parse only | `bash ./CI/bash/parseTestErrors.sh` | Parsed current log/XML |
-| Shader compile | `bash ./CI/bash/compileShaders.sh` | `CI/UnityShaders.log`, diagnostics, pass marker |
+| Shader compile | `bash ./CI/bash/compileShaders.sh` | `Logs/SimpleUnityMcp/UnityShaders.log`, diagnostics, pass marker |
+
+Logs and diagnostics live in `<project>/Logs/SimpleUnityMcp/` by default.
+All tool selections live in `<project>/.unity-simple-mcp/tools.env`; explicit
+environment overrides take precedence. This file is parsed as data, never sourced.
 
 The quick MSBuild path is valid only when generated solution files are current
 and no script, asmdef, package, shader, or asset was added or removed. Unity

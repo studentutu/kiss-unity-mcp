@@ -35,7 +35,7 @@ require_nonempty_file "$TEST_RESULTS" "Unity test results"
 
 extract_unity_diagnostics "$UNITY_LOG" "$DIAGNOSTICS_FILE"
 
-root_line="$(awk '/<test-run[[:space:]]/ { print; exit }' "$TEST_RESULTS")"
+root_line="$(awk -f "$SCRIPT_DIR/nunit-summary.awk" "$TEST_RESULTS")" || fail "Malformed, truncated, or inconsistent NUnit XML: $TEST_RESULTS"
 [[ -n "$root_line" ]] || fail "The test result does not contain an NUnit <test-run> root: $TEST_RESULTS"
 
 read_attribute() {
@@ -60,7 +60,7 @@ printf 'Test summary: result=%s total=%s passed=%s failed=%s inconclusive=%s ski
   "$result" "$total" "$passed" "$failed" "$inconclusive" "$skipped"
 
 if (( failed > 0 )) || [[ "$result" == "Failed" ]]; then
-  awk -v RS='</test-case>' '
+  awk '
     function decode(value) {
       gsub(/<!\[CDATA\[/, "", value)
       gsub(/\]\]>/, "", value)
@@ -77,16 +77,25 @@ if (( failed > 0 )) || [[ "$result" == "Failed" ]]; then
       finish=index(tail, closing)
       return finish ? substr(tail, 1, finish - 1) : tail
     }
-    index($0, "<test-case") && $0 ~ /result="Failed"/ {
+    function report_case(text, name,message,stack) {
+      if (text !~ /result="Failed"/) return
       name="(unknown test)"
-      if (match($0, /fullname="[^"]*"/))
-        name=substr($0, RSTART + 10, RLENGTH - 11)
-      message=decode(between($0, "<message>", "</message>"))
-      stack=decode(between($0, "<stack-trace>", "</stack-trace>"))
+      if (match(text, /fullname="[^"]*"/))
+        name=substr(text, RSTART + 10, RLENGTH - 11)
+      message=decode(between(text, "<message>", "</message>"))
+      stack=decode(between(text, "<stack-trace>", "</stack-trace>"))
       printf "\n-- %s --\n%s\n%s\n", name, message, stack
       found++
     }
+    { document=document $0 "\n" }
     END {
+      while (match(document, /<test-case[[:space:]]/)) {
+        document=substr(document, RSTART)
+        finish=index(document, "</test-case>")
+        if (!finish) break
+        report_case(substr(document, 1, finish-1))
+        document=substr(document, finish+12)
+      }
       if (!found)
         print "\nFailure details were not attached to a test-case; inspect the complete XML result."
     }
@@ -106,13 +115,13 @@ if [[ -s "$DIAGNOSTICS_FILE" ]]; then
   status=1
 fi
 
-if (( total == 0 )) && [[ "${ALLOW_NO_TESTS:-0}" != "1" ]]; then
-  printf 'ERROR: Unity completed without discovering tests. Set ALLOW_NO_TESTS=1 only when intentional.\n' >&2
+if (( total == 0 )); then
+  printf 'ERROR: Unity completed without discovering tests. Add tests and ensure the project includes Unity Test Framework.\n' >&2
   status=1
 fi
 
 if (( failed > 0 )) || (( inconclusive > 0 )) || [[ "$result" != "Passed" ]]; then
-  status=2
+  if (( status == 0 )); then status=2; fi
 fi
 
 if (( skipped > 0 )) && [[ "${FAIL_ON_SKIPPED:-0}" == "1" ]]; then

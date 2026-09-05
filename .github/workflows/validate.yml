@@ -1,0 +1,27 @@
+name: Bash workflow contracts
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  portable:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out source using Git
+        shell: bash
+        run: |
+          git init .
+          git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+          git fetch --depth=1 origin "$GITHUB_SHA"
+          git checkout --detach FETCH_HEAD
+      - name: Validate plugin and workflow
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            /bin/bash scripts/validate-plugin.sh
+            /bin/bash scripts/test-workflow.sh
+          else
+            bash scripts/validate-plugin.sh
+            bash scripts/test-workflow.sh
+          fi

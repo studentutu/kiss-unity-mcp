@@ -1,13 +1,7 @@
 {
     "name": "Studentutu.Unitysimplemcp.Editor",
     "rootNamespace": "",
-    "references": [
-        "Studentutu.Unitysimplemcp",
-        "Unity.Addressables",
-        "Unity.Addressables.Editor",
-        "Unity.ScriptableBuildPipeline",
-        "Unity.ScriptableBuildPipeline.Editor"
-    ],
+    "references": [],
     "includePlatforms": [
         "Editor"
     ],

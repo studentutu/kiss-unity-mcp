@@ -9,6 +9,9 @@ source "$SCRIPT_DIR/unity-ci-common.sh"
 require_unity_project
 
 UNITY_EDITOR="$(resolve_unity_editor)"
+export UNITY_EDITOR_PATH="$UNITY_EDITOR"
+require_closed_editor
+acquire_run_lock
 TEST_RESULTS="$(to_unix_path "${UNITY_TEST_RESULTS_PATH:-$CI_OUTPUT_DIR/CITestOutput.xml}")"
 UNITY_LOG="$(to_unix_path "${UNITY_TEST_LOG_PATH:-$CI_OUTPUT_DIR/UnityTests.log}")"
 
@@ -23,6 +26,7 @@ set +e
 "$UNITY_EDITOR" \
   -batchmode \
   -nographics \
+  -stackTraceLogType Full \
   -runTests \
   -projectPath "$UNITY_PROJECT_PATH" \
   -logFile "$UNITY_LOG" \

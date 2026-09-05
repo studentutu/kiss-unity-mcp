@@ -1,34 +1,24 @@
-# Simple Unity MCP
+# Simple Unity MCP editor package
 
-Editor-side tools for a headless, agent-friendly Unity workflow. The package is
-the Unity boundary; filesystem setup and process orchestration stay outside the
-package and call only stable, fully qualified editor methods.
+Reusable editor methods for Unity 2023.1+. There are no required package
+dependencies. Test execution needs the consuming project's Unity Test Framework;
+IDE solution generation needs an IDE integration already selected by that project.
+Setup does not add either dependency.
 
-## CI execute methods
+- `SimpleUnityMCP.Editor.CiTools.RegenerateProjectFilesAndExit`: refresh, wait for
+  compilation/import to settle across reloads, synchronize IDE projects, and exit.
+  The method owns shutdown: do not pass `-quit`. Success emits
+  `SIMPLE_UNITY_MCP_CI:PROJECT_FILES_SYNCED`.
+- `SimpleUnityMCP.Editor.CiTools.ForceCompileAndExit`: request clean script
+  compilation and exit with compilation/error evidence.
+- `SimpleUnityMCP.Editor.ShaderCompileTool.CompileAllProjectShaders`: reimport
+  shaders, inspect Unity shader errors, emit SHADER_COMPILATION_PASSED or FAILED,
+  and exit accordingly. This does not enumerate every player-build variant.
 
-- `SimpleUnityMCP.Editor.CiTools.RegenerateProjectFilesAndExit`
-  refreshes the Asset Database, synchronizes IDE project files, and emits
-  `SIMPLE_UNITY_MCP_CI:PROJECT_FILES_SYNCED` on success. The shell command must
-  pass Unity's `-quit` argument.
-- `SimpleUnityMCP.Editor.CiTools.ForceCompileAndExit`
-  requests a clean script compilation, reports compiler diagnostics, and exits
-  Unity with `0` on success or `1` on compiler failure.
-- `SimpleUnityMCP.Editor.ShaderCompileTool.CompileAllProjectShaders`
-  reimports project shaders, emits stable `SHADER_COMPILATION_PASSED` or
-  `SHADER_COMPILATION_FAILED` markers, and exits non-zero when errors are found.
+Editor errors are recorded across reloads using SessionState during batch runs.
+The shell wrapper still scans the complete native editor log, including errors
+before managed initialization or after the execute method.
 
-Do not copy shell scripts into this package. Package code must not assume a
-consumer repository path or a locally installed Unity/Rider version.
-
-## Requirements
-
-- Unity 2023.1 or newer (required by Addressables 2.9.1)
-- Unity Test Framework for the included package tests
-- Addressables and Scriptable Build Pipeline (declared package dependencies) for
-  the cache-cleaning editor utilities
-
-When installed through the Unity Simple MCP Codex plugin, setup copies only this
-package into the consumer project's `Packages/` directory. It does not copy CI
-wrappers or alter `Packages/manifest.json`. Use the plugin repository's
-`CI/RunUnityTestsReadme.md` or the consumer repository's equivalent wrappers for
-command-line use and environment overrides.
+Shell tools remain outside this package. Setup installs them into the project's
+`.unity-simple-mcp` directory, with tool paths in `tools.env` and VS Code actions
+in `.vscode`. See the plugin repository's Readme.md for the manual workflow.

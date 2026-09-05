@@ -1,3 +1,4 @@
+using System;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
@@ -11,12 +12,27 @@ namespace SimpleUnityMCP.Editor
 
         private const string CompilationPendingKey = "SimpleUnityMCP.CI.CompilationPending";
         private const string CompilationErrorCountKey = "SimpleUnityMCP.CI.CompilationErrorCount";
+        private const string SyncPendingKey = "SimpleUnityMCP.CI.SyncPending";
+        private const string EditorErrorCountKey = "SimpleUnityMCP.CI.EditorErrors";
 
         [InitializeOnLoadMethod]
         private static void ResumePendingCompilationAfterDomainReload()
         {
+            if (Application.isBatchMode)
+            {
+                Application.logMessageReceived -= RecordEditorError;
+                Application.logMessageReceived += RecordEditorError;
+            }
+            if (SessionState.GetBool(SyncPendingKey, false))
+                EditorApplication.update += SyncWhenIdle;
             if (SessionState.GetBool(CompilationPendingKey, false))
                 EditorApplication.update += CompleteCompilationWhenEditorIsIdle;
+        }
+
+        private static void RecordEditorError(string message, string stack, LogType type)
+        {
+            if (type == LogType.Error || type == LogType.Exception || type == LogType.Assert)
+                SessionState.SetInt(EditorErrorCountKey, SessionState.GetInt(EditorErrorCountKey, 0) + 1);
         }
 
         // Force Unity to fully recompile scripts (clean build cache + compile),
@@ -80,7 +96,8 @@ namespace SimpleUnityMCP.Editor
             CompilationPipeline.assemblyCompilationFinished -= OnAssemblyCompilationFinished;
             CompilationPipeline.compilationFinished -= OnCompilationFinished;
 
-            var compilationErrorCount = SessionState.GetInt(CompilationErrorCountKey, 0);
+            var compilationErrorCount = SessionState.GetInt(CompilationErrorCountKey, 0)
+                + SessionState.GetInt(EditorErrorCountKey, 0);
             SessionState.SetBool(CompilationPendingKey, false);
             SessionState.SetInt(CompilationErrorCountKey, 0);
 
@@ -92,14 +109,38 @@ namespace SimpleUnityMCP.Editor
             EditorApplication.Exit(compilationErrorCount == 0 ? 0 : 1);
         }
 
-        // Regenerate IDE project files (.sln/.csproj), then quit.
-        // The command line owns process shutdown via -quit; this method emits a marker
-        // only after the refresh and IDE sync both complete.
+        // Own shutdown after refresh/reload has settled. Do not pass -quit.
         public static void RegenerateProjectFilesAndExit()
         {
+            SessionState.SetBool(SyncPendingKey, true);
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
-            Unity.CodeEditor.CodeEditor.CurrentEditor.SyncAll();
-            Debug.Log(ProjectFilesSyncedMarker);
+            EditorApplication.update -= SyncWhenIdle;
+            EditorApplication.update += SyncWhenIdle;
+        }
+
+        private static void SyncWhenIdle()
+        {
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+                return;
+            EditorApplication.update -= SyncWhenIdle;
+            SessionState.SetBool(SyncPendingKey, false);
+            try
+            {
+                Unity.CodeEditor.CodeEditor.CurrentEditor.SyncAll();
+                if (SessionState.GetInt(EditorErrorCountKey, 0) > 0)
+                {
+                    Debug.LogError("SIMPLE_UNITY_MCP_CI:IMPORT_FAILED; inspect the complete editor log.");
+                    EditorApplication.Exit(1);
+                    return;
+                }
+                Debug.Log(ProjectFilesSyncedMarker);
+                EditorApplication.Exit(0);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                EditorApplication.Exit(1);
+            }
         }
     }
 }

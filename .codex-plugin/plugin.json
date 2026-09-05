@@ -1,7 +1,7 @@
 {
   "name": "unity-simple-mcp",
   "version": "0.5.0",
-  "description": "Set up the bundled Unity editor automation package in a local Unity project.",
+  "description": "Bash-only Unity setup, verified import, fast Rider/MSBuild compilation, tests and manual VS Code actions.",
   "author": {
     "name": "Roman",
     "email": "studentutu@email.com",
@@ -20,8 +20,8 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Unity Simple MCP",
-    "shortDescription": "Install local Unity editor automation once.",
-    "longDescription": "Inspect a Unity project and install the bundled com.studentutu.unitysimplemcp package as a local embedded package.",
+    "shortDescription": "Unity and Rider build tools, with Bash-only setup.",
+    "longDescription": "Install the embedded Unity package and standalone Bash tools once. Select Unity and Rider per project, run manual VS Code actions or MCP tools, and verify complete editor and MSBuild logs.",
     "developerName": "Roman",
     "category": "Developer Tools",
     "capabilities": [

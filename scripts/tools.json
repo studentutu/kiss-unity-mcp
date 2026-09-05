@@ -1,0 +1,127 @@
+{
+  "tools": [
+    {
+      "name": "inspect_unity_project",
+      "description": "Read-only inspection of package and manual tooling setup.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "required": [
+          "project_path"
+        ],
+        "properties": {
+          "project_path": {
+            "type": "string",
+            "description": "Unity project root path."
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "name": "setup_unity_project",
+      "description": "Explicit one-time filesystem setup; refuses conflicts. Installs package, Bash tooling, settings and VS Code workspace.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "required": [
+          "project_path"
+        ],
+        "properties": {
+          "project_path": {
+            "type": "string",
+            "description": "Unity project root path."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "name": "unity_doctor",
+      "description": "Resolve exact project Unity editor and Rider/MSBuild without launching them.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "required": [
+          "project_path"
+        ],
+        "properties": {
+          "project_path": {
+            "type": "string",
+            "description": "Unity project root path."
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "name": "unity_import",
+      "description": "Authoritative Unity import/compile and solution generation. Close interactive Unity first. Full editor log is retained.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "required": [
+          "project_path"
+        ],
+        "properties": {
+          "project_path": {
+            "type": "string",
+            "description": "Unity project root path."
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "name": "unity_build",
+      "description": "Fast incremental MSBuild after a verified Unity import. Full diagnostic log is retained.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "required": [
+          "project_path"
+        ],
+        "properties": {
+          "project_path": {
+            "type": "string",
+            "description": "Unity project root path."
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "name": "unity_tests",
+      "description": "Run project EditMode tests; requires Unity Test Framework already installed by the project.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "required": [
+          "project_path"
+        ],
+        "properties": {
+          "project_path": {
+            "type": "string",
+            "description": "Unity project root path."
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "name": "unity_shaders",
+      "description": "Reimport shaders and check Unity shader diagnostics. Close interactive Unity first.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "required": [
+          "project_path"
+        ],
+        "properties": {
+          "project_path": {
+            "type": "string",
+            "description": "Unity project root path."
+          }
+        },
+        "type": "object"
+      }
+    }
+  ]
+}

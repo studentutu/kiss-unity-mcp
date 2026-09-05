@@ -1,30 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEditor.AddressableAssets.Settings;
-using UnityEditor.Build.Pipeline.Utilities;
-using UnityEditor.Rendering;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 
 namespace SimpleUnityMCP.Editor
 {
     public class EditorTools
     {
-        [MenuItem("Tools/Editor/Clear Player Prefs", priority = 1, secondaryPriority = 0)]
+        [MenuItem("Tools/Editor/Clear Player Prefs", priority = 1)]
         public static void ClearPlayerPrefs()
         {
             PlayerPrefs.DeleteAll();
             PlayerPrefs.Save();
         }
 
-        [MenuItem("Tools/Editor/Clear Editor Cache", priority = 1, secondaryPriority = 1)]
+        [MenuItem("Tools/Editor/Clear Editor Cache", priority = 2)]
         public static void ClearEditorCache()
         {
-            BuildCache.PurgeCache(prompt: false);
             UnityEngine.Caching.ClearCache();
+            // BuildCache.PurgeCache(prompt: false); // Requires link to using UnityEditor.Build.Pipeline.Utilities;
             UnityEditor.Lightmapping.ClearDiskCache();
 
             // only for the active scene.
@@ -35,14 +31,15 @@ namespace SimpleUnityMCP.Editor
 
             SaveAndRefresh();
         }
-
-        [MenuItem("Tools/Editor/Clear Addressables", priority = 1, secondaryPriority = 2)]
-        public static void CleanAddressables()
-        {
-            AddressableAssetSettings.CleanPlayerContent();
-            EditorFolders.ClearAddressableAssetFolder();
-        }
         
+        // Requires addressables package.
+        // [MenuItem("Tools/Editor/Clear Addressables", priority = 1, secondaryPriority = 2)]
+        // public static void CleanAddressables()
+        // {
+        //     AddressableAssetSettings.CleanPlayerContent();
+        //     EditorFolders.ClearAddressableAssetFolder();
+        // }
+
         /// <summary>
         ///  In order for sub-scenes to use the same Occlusion/LightProbes/Light settings
         ///  we need 1 main and all of them to be baked at the same tim.

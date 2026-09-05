@@ -1,30 +1,59 @@
 ---
 name: unity-simple-mcp-setup
-description: Inspect or perform the one-time installation of the bundled com.studentutu.unitysimplemcp package in a local Unity project. Use for setup, installation, repair, or verification requests; do not use for ordinary Unity work after setup.
+description: Install Unity Simple MCP once, inspect its state, or use its Bash commands for Unity import, fast Rider/MSBuild compilation, tests and shader checks. Use setup only when explicitly requested.
 ---
 
-# Unity Simple MCP setup
+# Unity Simple MCP
 
-Treat setup as a one-time project mutation, not a prerequisite to repeat on every Unity task.
+Resolve the plugin root two directories above this skill. Commands require Bash
+3.2+, Git and standard Unix utilities; no Node, Python or package manager.
 
-1. Resolve the intended Unity project root. It must contain `Assets/`, `Packages/`, and `ProjectSettings/ProjectVersion.txt`.
-2. Call `inspect_unity_project` before any write.
-3. Branch on the returned state:
-   - `installed`: report that setup is already complete. Do not call setup again.
-   - `not_installed`: call `setup_unity_project` only when the user asked to set up or install the package.
-   - `conflict`: stop and report the existing package path. Do not replace it without an explicit replacement request.
-4. After a changed setup, inspect once more and require the `installed` state.
+## Explicit one-time setup
 
-Inspection and setup only touch the filesystem; they do not launch Unity. Do not resolve or start a Unity editor for this workflow. For later Unity-backed compile, test, or shader work, follow the target repository's `AGENTS.md` and require its exact `m_EditorVersion` before launching Unity.
+1. Resolve the selected Unity project (Assets, Packages, ProjectSettings/ProjectVersion.txt).
+2. Call `inspect_unity_project` or run `bash <plugin-root>/scripts/setup-unity-project.sh <project> --dry-run`.
+3. `installed`: setup is already complete. `not_installed`: run setup only when requested.
+   `conflict`: report exact paths; do not replace user changes automatically.
+4. Call `setup_unity_project` or run `bash <plugin-root>/scripts/setup-unity-project.sh <project>`.
+5. Inspect once more and require `installed`. Point the user to
+   `<project>/.unity-simple-mcp/tools.env` and
+   `<project>/.vscode/unity-simple-mcp.code-workspace` for manual control.
 
-If the MCP tools are unavailable, resolve the plugin root from this skill and run:
+Setup copies the embedded Unity package and standalone Bash tooling. It creates
+VS Code tasks only when absent and always provides a dedicated workspace.
+It preserves existing tasks and tool settings; it never starts Unity or edits
+Packages/manifest.json. Only use CLI `--replace` for an intentional authorized
+replacement. Previous installations are retained for recovery.
 
-```text
-node <plugin-root>/scripts/setup-unity-project.mjs <unity-project-path>
+## After setup
+
+Never repeat setup as a routine preamble. Use MCP tools `unity_doctor`,
+`unity_import`, `unity_build`, `unity_tests`, and `unity_shaders`, or the same
+manual API:
+
+```bash
+bash <project>/.unity-simple-mcp/scripts/unity.sh doctor <project>
+bash <project>/.unity-simple-mcp/scripts/unity.sh import <project>
+bash <project>/.unity-simple-mcp/scripts/unity.sh build <project>
+bash <project>/.unity-simple-mcp/scripts/unity.sh tests <project>
+bash <project>/.unity-simple-mcp/scripts/unity.sh shaders <project>
 ```
 
-The script is idempotent for a matching package. A differing embedded package is a hard failure. Only after the user explicitly requests replacement may you use:
+Every Unity-backed command resolves the exact editor from ProjectVersion.txt,
+lists installed editors, and fails with configuration paths if tools are missing.
+Close interactive Unity for that project before a headless process; do not kill
+an editor with potentially unsaved work. Tool settings are parsed data, not shell
+code. Use Git Bash for Windows editors, not WSL.
 
-```text
-node <plugin-root>/scripts/setup-unity-project.mjs <unity-project-path> --replace
-```
+Run import first. Fast MSBuild only validates existing C# projects and requires a
+matching import snapshot. Added/removed files, assets, asmdefs, packages, settings,
+compilation directives, or importer/editor behavior changes require another
+Unity import. Tests require the consumer's existing Unity Test Framework; setup
+never installs it. Shader import checks do not cover every player build variant.
+
+Read `<project>/Logs/SimpleUnityMcp/` on failure. Complete Unity editor logs and
+MSBuild diagnostic file logs are authoritative; summaries are only navigation.
+Require zero process status, fresh nonempty logs, completion evidence and clean
+diagnostics. Tests additionally require structurally valid, consistent NUnit XML,
+at least one discovered test, and a passing root test-run. Exit `1` means tool /
+compile / infrastructure failure; `2` means failed or inconclusive tests.
