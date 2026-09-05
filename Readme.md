@@ -1,14 +1,31 @@
 # Unity Simple MCP
 
-The `studentutu` marketplace contains the `unity-simple-mcp` plugin at this
-repository root. Setup and MCP transport use **Bash 3.2+, Git, and standard Unix
+Separate marketplace that contains `unity-simple-mcp` plugin.
+
+Editor-side tools for a headless, agent-friendly Unity workflow. The package is the Unity boundary: reusable Bash orchestration stays in the consumer repository's CI/bash directory and calls only stable, fully qualified methods.
+
+## Requirements
+
+- **Bash 3.2+, Git, and standard Unix
 utilities**. Git for Windows supplies these on Windows; macOS/Linux need Git and
 Bash. No Node, Python, jq, package manager, or runtime download is used.
+- Unity Editor
+- MSBuild/Rider
 
-Unity and a compatible Rider/MSBuild toolchain are required only for build work.
-A Bash script cannot compile C# without a compiler. Setup installs neither an SDK
-nor Unity packages. Tests require the consuming project to already have Unity
-Test Framework. The embedded package has no package dependencies.
+Optionally:
+
+- vscode for friendly developer compilation workflows.
+
+## Why this exists?
+
+All unity related MCP always skip proper manual validations/ci/different-osx/tries to sell bloatware.
+
+This doesn't. **All you need is bash, unity and Rider(MsBuild).**
+
+Developer must have a proper control over the tools used, including:
+
+- optionally override path to the tools such as unity-editor, rider(msbuild), so it will work in case you have different CI/OS/headless/ssh(docker, podman).
+- the same compilation and verification workflow as is used by the agent.
 
 ## Set up one Unity project
 
@@ -46,7 +63,7 @@ Setup never starts Unity or modifies `Packages/manifest.json`.
 
 Open the project in VS Code and choose **Terminal > Run Task > Unity MCP**.
 If the project already had tasks, open its generated
-`.vscode/unity-simple-mcp.code-workspace` to access the additional tasks.
+`.vscode/unity-simple-mcp.code-workspace` to access the additional tasks (copy them to your `.vscode/tasks.json` in case you don't want to override it, but need them).
 Use **Check tool paths**, **Import and generate solution**, then **Fast MSBuild**.
 **Open tool settings** opens the one configuration file. It uses VS Code's `code`
 CLI; if that CLI is not on PATH, open `.unity-simple-mcp/tools.env` in the Explorer.
@@ -68,6 +85,11 @@ Windows tasks launch through Git's temporary Bash alias to avoid the Windows WSL
 `bash.exe` launcher. `git` must be on PATH. Use Git Bash, not WSL, for Windows Unity.
 
 ## Select tools per project
+
+Unity and a compatible Rider/MSBuild toolchain are required only for build work.
+A Bash script cannot compile C# without a compiler. Setup installs only template files and local package for this mcp.
+Tests require the consuming project to already have Unity
+Test Framework. The embedded package has no package dependencies.
 
 Edit `.unity-simple-mcp/tools.env`. This is a data file, not sourced shell code:
 `KEY=value`, optional surrounding quotes, absolute paths, no variable expansion.
@@ -96,7 +118,7 @@ installations may require a compatible Mono or dotnet host and reference
 assemblies from the existing toolchain. Configure those explicitly; setup does
 not download them. See [Rider's toolset documentation](https://www.jetbrains.com/help/rider/Settings_Toolset_and_Build.html).
 
-## What a passing command proves
+## What a passing command proves (what all of this actual do)
 
 Full logs live in `Logs/SimpleUnityMcp` inside the Unity project:
 
