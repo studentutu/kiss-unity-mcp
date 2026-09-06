@@ -1,7 +1,7 @@
 {
   "name": "com.studentutu.kissunitymcp",
   "displayName": "kissunitymcp",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "unity": "2023.1",
   "description": "Simple and minimal unity MCP for buildings, testing, and verifying code and shaders.",
   "dependencies": {},

@@ -1,0 +1,17 @@
+{
+  "name": "studentutu",
+  "owner": {
+    "name": "Roman",
+    "email": "studentutu@email.com"
+  },
+  "plugins": [
+    {
+      "name": "kiss-unity-mcp",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/studentutu/kiss-unity-mcp.git",
+        "ref": "master"
+      }
+    }
+  ]
+}

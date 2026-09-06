@@ -6,10 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Add Codex and Claude Code marketplace support over the same skills, Bash tools,
+  MCP server, and embedded Unity package (aligned at version 0.6.0).
 - Standardize package, assembly, setup, workspace, and log paths on `kissunitymcp`.
 - Keep the plugin/repository name `kiss-unity-mcp` and existing C# entry points
-  and verification markers. Existing installations require the migration
-  described in the repository README before setup.
+  and verification markers.
 
 ## [0.1.0] - 2026-08-29
 

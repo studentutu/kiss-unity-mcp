@@ -1,8 +1,8 @@
 # Agent workflow
 
-This repository is both a Codex plugin and the source of the embedded Unity
-package `com.studentutu.kissunitymcp`. Keep the plugin boundary and the Unity
-package boundary separate.
+This repository is a shared Codex and Claude Code plugin and the source of the
+embedded Unity package `com.studentutu.kissunitymcp`. Keep harness metadata, the
+shared plugin implementation, and the Unity package boundary separate.
 
 ## Non-negotiable setup contract
 
@@ -27,9 +27,12 @@ copy before swapping it into the consumer project's `Packages/` directory.
 
 ## Repository entry points
 
-- Plugin metadata: `.codex-plugin/plugin.json`
-- Marketplace catalog: `.agents/plugins/marketplace.json`
-- Bundled MCP configuration: `.mcp.json`
+- Plugin metadata: `.codex-plugin/plugin.json`, `.claude-plugin/plugin.json`
+- Marketplace catalogs: `.agents/plugins/marketplace.json`, `.claude-plugin/marketplace.json`
+- Bundled MCP configurations: `.mcp.codex.json`, `.mcp.claude.json` (explicit manifest paths;
+  no root `.mcp.json`, which both harnesses would auto-discover)
+- Both harnesses use the root `skills/`, `scripts/`, `CI/bash/`, and Unity package.
+  Never create harness-specific copies of that implementation.
 - Plugin/MCP server namespace: `kiss-unity-mcp`; skills: `kiss-unity-mcp-*`.
   Keep installed filesystem paths and the Unity package identity stable.
 - MCP server: `scripts/mcp-server.sh` (thin stdio adapter)
@@ -56,11 +59,11 @@ Do not duplicate the authoritative `CI/bash` implementation under `scripts/`.
   repository URL with `source: "url"`; do not create a duplicate plugin copy
   under `plugins/`.
 - `master` is the published source ref. Feature branches are not releases.
-- Keep `.codex-plugin/plugin.json` and
+- Keep `.codex-plugin/plugin.json`, `.claude-plugin/plugin.json`, and
   `com.studentutu.kissunitymcp/package.json` versions identical.
 - Run `bash scripts/validate-plugin.sh` before publishing. Merge and push the
   verified commit before asking users to upgrade the marketplace.
-- Do not mutate a developer's Codex marketplace configuration as part of normal
+- Do not mutate a developer's Codex or Claude Code marketplace configuration as part of normal
   repository validation. Installation is an explicit user action.
 
 ## Prerequisite: resolve the exact Unity editor

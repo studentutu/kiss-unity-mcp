@@ -1,6 +1,7 @@
 # kiss-unity-mcp
 
-Separate marketplace that contains `kiss-unity-mcp` plugin.
+The `studentutu` marketplace provides `kiss-unity-mcp` for Codex and Claude Code.
+Both harnesses use the same skills, Bash scripts, MCP server, and Unity package.
 
 Use `kiss-unity-mcp` for the plugin and MCP server, `kiss-unity-mcp-*` for
 skills (for example, `$kiss-unity-mcp-import`), and `kiss-unity-mcp:` for VS Code
@@ -43,11 +44,37 @@ Optionally:
 
 ## Install
 
-### Agents
+### Codex
 
-1. Add this repository as a **marketplace**. Different setup for each of the harnesses codex/claude/gemini.
-2. Enable **`kiss-unity-mcp` plugin** from **@studentutu** marketplace.
-3. Ask agent to setup a given unity project afterwards (one time setup per unity project is required).
+Add the repository marketplace from a terminal:
+
+```bash
+codex plugin marketplace add https://github.com/studentutu/kiss-unity-mcp.git --ref master
+```
+
+In the Codex app's plugin directory, select **Studentutu Plugins** and install
+**kiss-unity-mcp**. Start a new task and request `$kiss-unity-mcp-setup` with the
+absolute Unity project path. See the [Codex plugin documentation](https://developers.openai.com/plugins/build/plugins).
+
+### Claude Code
+
+Run these commands inside Claude Code:
+
+```text
+/plugin marketplace add studentutu/kiss-unity-mcp@master
+/plugin install kiss-unity-mcp@studentutu
+```
+
+Restart Claude Code to load the plugin, then invoke
+`/kiss-unity-mcp:kiss-unity-mcp-setup` with the absolute Unity project path.
+Check `/mcp` for the plugin's `kiss-unity-mcp` server. Git must be on PATH;
+on Windows, install Git for Windows so the launcher can use its Bash.
+See the [Claude Code marketplace documentation](https://code.claude.com/docs/en/plugin-marketplaces).
+
+For both harnesses, setup is explicit and runs once per Unity project. Switching
+harnesses uses the existing installation and `tools.env`; matching content is a
+no-op. A different installed version can report a conflict and requires an
+explicit replacement request after reviewing the differences.
 
 ### Manual setup (without agents)
 
@@ -155,9 +182,10 @@ bash scripts/unity.sh doctor "/path/to/project"
 bash scripts/verify-unity-workflow.sh "/path/to/disposable-project"
 ```
 
-The marketplace entry stays at `.agents/plugins/marketplace.json`, uses the remote
-repository URL, and tracks `master`. Keep plugin/package versions equal. Local
-edits do not publish a release. Publish only after explicit authorization and
+The marketplace entries at `.agents/plugins/marketplace.json` (Codex) and
+`.claude-plugin/marketplace.json` (Claude Code) use the same remote repository URL
+and track `master`. Keep both plugin manifests and the Unity package version
+equal. Local edits do not publish a release. Publish only after explicit authorization and
 successful validation; installation/upgrading the developer's marketplace is a
 separate user action.
 
@@ -198,6 +226,36 @@ assemblies from the existing toolchain. Configure those explicitly; setup does
 not download them. See [Rider's toolset documentation](https://www.jetbrains.com/help/rider/Settings_Toolset_and_Build.html).
 
 ## Repository development
+
+The plugin lives at the repository root. Harness-specific files only describe
+discovery, installation, and MCP startup:
+
+| Boundary | Codex | Claude Code |
+| --- | --- | --- |
+| Plugin manifest | `.codex-plugin/plugin.json` | `.claude-plugin/plugin.json` |
+| Marketplace | `.agents/plugins/marketplace.json` | `.claude-plugin/marketplace.json` |
+| MCP configuration | `.mcp.codex.json` | `.mcp.claude.json` |
+| Skills | `skills/` | `skills/` |
+| MCP server / setup / manual API | `scripts/` | `scripts/` |
+| Unity orchestration | `CI/bash/` | `CI/bash/` |
+| Embedded Unity package | `com.studentutu.kissunitymcp/` | `com.studentutu.kissunitymcp/` |
+
+Both manifests explicitly select their MCP configuration. There is no root
+`.mcp.json`, so default discovery cannot load the other harness's configuration.
+Codex keeps its plugin-relative `cwd` and approval/timeout settings. Claude Code
+uses `${CLAUDE_PLUGIN_ROOT}` as a separate `git -C` argument, so cache paths with
+spaces work from any project directory. Both launch `scripts/mcp-server.sh`
+through Git Bash and preserve Git's directory prefix when the plugin is nested
+inside another checkout. Claude Code manages permissions and timeouts through its own
+settings; Codex policy fields are not portable to Claude Code.
+The configuration follows the [Claude Code plugin reference](https://code.claude.com/docs/en/plugins-reference).
+
+The validator checks shared metadata, versions, source refs, and skill paths.
+Regression tests execute both configured launchers from an isolated copy, compare
+their MCP handshake/tool catalog, and verify setup remains a no-op when switching
+harnesses. These tests do not install plugins into a developer's harness. For
+local Claude Code discovery testing, run `claude --plugin-dir /absolute/path/to/kiss-unity-mcp`
+and inspect `/plugin` and `/mcp`; test the marketplace separately after publication.
 
 `CI/bash` is authoritative; legacy `bash/` commands forward there. Automated
 portable contracts cover setup, protocol handling, platform path resolution,

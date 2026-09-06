@@ -17,13 +17,83 @@ expect_exit() {
 # Validate task skills plus the setup exception in an isolated copy.
 validation_root="$work/Plugin validation"
 mkdir "$validation_root"
-cp -R "$root/.codex-plugin" "$root/.agents" "$root/.mcp.json" "$root/scripts" \
+cp -R "$root/.codex-plugin" "$root/.claude-plugin" "$root/.agents" \
+  "$root/.mcp.codex.json" "$root/.mcp.claude.json" "$root/scripts" \
   "$root/templates" "$root/com.studentutu.kissunitymcp" "$root/CI" \
   "$root/bash" "$root/skills" "$validation_root/"
 validator="$validation_root/scripts/validate-plugin.sh"
 skill="$validation_root/skills/kiss-unity-mcp-doctor/SKILL.md"
 cp "$skill" "$work/doctor-skill.md"
 expect_exit 0 bash "$validator"
+
+# Reject harness drift, then restore and prove both metadata surfaces are valid.
+claude_manifest="$validation_root/.claude-plugin/plugin.json"
+cp "$claude_manifest" "$work/claude-plugin.json"
+sed 's/"version": "[^"]*"/"version": "99.0.0"/' "$work/claude-plugin.json" > "$claude_manifest"
+expect_exit 1 bash "$validator"
+grep -qF 'Codex/Claude plugin metadata differs: version' "$work/last.log" || fail 'Harness version drift accepted'
+sed 's|"./skills/"|"./.claude-plugin/skills/"|' "$work/claude-plugin.json" > "$claude_manifest"
+expect_exit 1 bash "$validator"
+grep -qF 'Codex/Claude plugin metadata differs: skills' "$work/last.log" || fail 'Separate Claude skills accepted'
+cp "$work/claude-plugin.json" "$claude_manifest"
+claude_marketplace="$validation_root/.claude-plugin/marketplace.json"
+cp "$claude_marketplace" "$work/claude-marketplace.json"
+sed 's/"master"/"feature"/' "$work/claude-marketplace.json" > "$claude_marketplace"
+expect_exit 1 bash "$validator"
+grep -qF 'Codex/Claude marketplace differs: plugins/0/source/ref' "$work/last.log" || fail 'Claude release ref drift accepted'
+cp "$work/claude-marketplace.json" "$claude_marketplace"
+claude_mcp="$validation_root/.mcp.claude.json"
+cp "$claude_mcp" "$work/claude-mcp.json"
+sed 's/${CLAUDE_PLUGIN_ROOT}/./' "$work/claude-mcp.json" > "$claude_mcp"
+expect_exit 1 bash "$validator"
+grep -qF 'Claude MCP must resolve its installed plugin root' "$work/last.log" || fail 'Relative Claude launch accepted'
+cp "$work/claude-mcp.json" "$claude_mcp"
+cp "$claude_mcp" "$validation_root/.mcp.json"
+expect_exit 1 bash "$validator"
+grep -qF 'root .mcp.json would also be auto-discovered' "$work/last.log" || fail 'Ambiguous MCP discovery accepted'
+rm "$validation_root/.mcp.json"
+mkdir "$validation_root/.claude-plugin/scripts"
+expect_exit 1 bash "$validator"
+grep -qF 'Do not duplicate shared implementation' "$work/last.log" || fail 'Harness runtime duplication accepted'
+rmdir "$validation_root/.claude-plugin/scripts"
+expect_exit 0 bash "$validator"
+
+# Execute actual manifest-selected launch configurations. Model only the host's
+# documented path handling, without eval, a Unity editor, or installing plugins.
+launch_plugin_mcp() (
+  local harness="$1" config command arg index=0 plugin_path="$validation_root"
+  local args=()
+  config="$(json_get "$validation_root/.$harness-plugin/plugin.json" /mcpServers)"
+  config="$validation_root/$config"
+  command="$(json_get "$config" /mcpServers/kiss-unity-mcp/command)"
+  # Claude on Windows substitutes native paths; Git -C must accept those too.
+  if command -v cygpath >/dev/null 2>&1; then plugin_path="$(cygpath -w "$validation_root")"; fi
+  while arg="$(json_get "$config" "/mcpServers/kiss-unity-mcp/args/$index" 2>/dev/null)"; do
+    arg="${arg//'${CLAUDE_PLUGIN_ROOT}'/$plugin_path}"
+    args+=("$arg")
+    index=$((index+1))
+  done
+  cd "$work"
+  if [[ "$harness" == codex ]]; then
+    cd "$validation_root/$(json_get "$config" /mcpServers/kiss-unity-mcp/cwd)"
+  fi
+  exec "$command" "${args[@]}"
+)
+printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
+  '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' > "$work/launch-requests"
+bash "$validation_root/scripts/mcp-server.sh" < "$work/launch-requests" > "$work/direct-responses"
+for harness in codex claude; do
+  expect_exit 0 launch_plugin_mcp "$harness" < "$work/launch-requests"
+  cmp "$work/direct-responses" "$work/last.log" || fail "$harness launcher changed MCP output"
+done
+# Git shell aliases reset cwd to the enclosing repository root. A plugin cache
+# or --plugin-dir directory can be nested inside a different Git checkout.
+git init --quiet "$work"
+for harness in codex claude; do
+  expect_exit 0 launch_plugin_mcp "$harness" < "$work/launch-requests"
+  cmp "$work/direct-responses" "$work/last.log" || fail "$harness nested launcher changed MCP output"
+done
 setup_skill="$validation_root/skills/kiss-unity-mcp-setup"
 mv "$setup_skill" "$work/setup-skill"
 expect_exit 1 bash "$validator"
@@ -118,6 +188,18 @@ printf '// personal tasks\n{"tasks":[]}\n' > "$project2/.vscode/tasks.json"
 before="$(git hash-object "$project2/.vscode/tasks.json")"
 expect_exit 0 bash "$root/scripts/setup-unity-project.sh" "$project2"
 [[ "$before" == "$(git hash-object "$project2/.vscode/tasks.json")" && -f "$project2/.vscode/kissunitymcp.code-workspace" ]] || fail 'Existing tasks not preserved'
+
+# Switching harnesses uses the same setup/digests and preserves tools.env.
+printf '\nRIDER_ROOT=/custom rider\n' >> "$project2/.kissunitymcp/tools.env"
+shared_before="$(tree_digest "$project2")"
+for harness in codex claude; do
+  printf '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"setup_unity_project","arguments":{"project_path":%s}}}\n' "$(quote "$project2")" > "$work/launch-requests"
+  expect_exit 0 launch_plugin_mcp "$harness" < "$work/launch-requests"
+  [[ "$(json_get "$work/last.log" /result/isError)" == false ]] || fail "$harness shared setup failed"
+  json_get "$work/last.log" /result/content/0/text > "$work/setup-result"
+  [[ "$(json_get "$work/setup-result" /action)" == already_installed ]] || fail "$harness setup was not shared"
+  [[ "$shared_before" == "$(tree_digest "$project2")" ]] || fail "$harness changed the existing shared installation"
+done
 
 # JSON grammar, Unicode escapes, and transport framing; no shell evaluation.
 printf '%s\n' '{"x":"C:\\A \u03b1 \ud83d\ude80","id":"q\"\\id"}' > "$work/json"

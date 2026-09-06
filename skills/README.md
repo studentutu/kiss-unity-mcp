@@ -11,6 +11,12 @@ Skills cover the actions in [the task template](../templates/tasks.json), plus
 [explicit one-time setup](kiss-unity-mcp-setup/SKILL.md). Setup is the sole
 non-task exception; all skills include manual usage, prerequisites, and verification.
 
+Codex and Claude Code load this same directory. In Codex, invoke a skill as
+`$kiss-unity-mcp-import`; in Claude Code, invoke it as
+`/kiss-unity-mcp:kiss-unity-mcp-import`. The `agents/openai.yaml` files supply
+Codex UI metadata; the shared `SKILL.md` instructions work in both harnesses.
+Follow the [installation instructions](../Readme.md#install) for each marketplace.
+
 | Skill | VS Code task | Purpose |
 | --- | --- | --- |
 | [Doctor](kiss-unity-mcp-doctor/SKILL.md) | kiss-unity-mcp: Check tool paths | Resolve exact Unity and Rider paths without launching |

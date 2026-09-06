@@ -1,6 +1,6 @@
 {
   "name": "kiss-unity-mcp",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Bash-only Unity setup, verified import, fast Rider/MSBuild compilation, tests and manual VS Code actions.",
   "author": {
     "name": "Roman",
@@ -18,7 +18,7 @@
     "mcp"
   ],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
+  "mcpServers": "./.mcp.codex.json",
   "interface": {
     "displayName": "kiss-unity-mcp",
     "shortDescription": "Unity and Rider build tools, with Bash-only setup.",

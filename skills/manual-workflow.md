@@ -12,6 +12,11 @@ the **kiss-unity-mcp: unity-import-long-compile** task. The installed
 `.kissunitymcp/` directory and `kissunitymcp.code-workspace` filename are stable
 filesystem paths.
 
+Codex and Claude Code use these same instructions and scripts. Claude Code scopes
+plugin MCP tools under the plugin/server names; select the `kiss-unity-mcp` server
+belonging to the `kiss-unity-mcp` plugin. Harness permission settings remain local
+to that harness. Switching harnesses does not require another project setup.
+
 ## Resolve paths, not the current working directory
 
 `<plugin-root>` is the absolute plugin checkout/installation directory, two

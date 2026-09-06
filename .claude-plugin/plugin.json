@@ -1,0 +1,22 @@
+{
+  "name": "kiss-unity-mcp",
+  "version": "0.6.0",
+  "description": "Bash-only Unity setup, verified import, fast Rider/MSBuild compilation, tests and manual VS Code actions.",
+  "author": {
+    "name": "Roman",
+    "email": "studentutu@email.com",
+    "url": "https://github.com/studentutu"
+  },
+  "homepage": "https://github.com/studentutu/kiss-unity-mcp#readme",
+  "repository": "https://github.com/studentutu/kiss-unity-mcp.git",
+  "keywords": [
+    "unity3d",
+    "game-development",
+    "fast-compile",
+    "shader-compile",
+    "testing",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.claude.json"
+}

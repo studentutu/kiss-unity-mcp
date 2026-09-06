@@ -5,7 +5,7 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/common.sh"
 work="$(mktemp -d "${TMPDIR:-/tmp}/unity-mcp-rpc.XXXXXXXX")"
 [[ "$work" == "${TMPDIR:-/tmp}"/unity-mcp-rpc.* ]] || fail "Unsafe temporary path"
 trap 'rm -rf -- "$work"' EXIT
-version="$(json_get "$TOOLS_SCRIPT_DIR/../.codex-plugin/plugin.json" /version)"
+version="$(json_get "$TOOLS_SCRIPT_DIR/../com.studentutu.kissunitymcp/package.json" /version)"
 reply_error() { printf '{"jsonrpc":"2.0","id":%s,"error":{"code":%s,"message":%s}}\n' "$id" "$1" "$(quote "$2")"; }
 tool_call() {
   local name project dry action

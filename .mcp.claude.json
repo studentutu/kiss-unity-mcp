@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "kiss-unity-mcp": {
+      "command": "git",
+      "args": [
+        "-C",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "-c",
+        "alias.unity-bash=!exec bash \"$GIT_PREFIX./scripts/mcp-server.sh\"",
+        "unity-bash"
+      ]
+    }
+  }
+}
