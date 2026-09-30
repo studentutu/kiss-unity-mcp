@@ -12,6 +12,12 @@ MCP tool names such as `unity_import` belong to the `kiss-unity-mcp` server.
 Editor-side tools for a headless, agent-friendly Unity workflow.
 The package is the Unity boundary: reusable Bash orchestration stays in the consumer repository's CI/bash directory and calls only stable, fully qualified methods.
 
+Best in MCP for unity category for Unity projects:
+
+- kiss-unity-mcp: **~2.8k tokens, 14.0s per task** (tools.json + tests skill + headless contract + local package + quick MSBuild compile + full visibility of the error in the output)
+- Unity-CLI (com.unity.pipeline): **with ~20k tokens, 12.8s per task** (official SKILL.md 37.6 KB + build-run-test.md 43.9 KB, no visibility in the output, needs further calls to parse json output). Doesn't have shader compilation tool.
+- CoplayDev/unity-mcp (https://github.com/CoplayDev/unity-mcp): **~64k token, 42.6s per task** (requires opened Editor + python3 + uv + additional local package inside the editor).
+
 ## Why this exists?
 
 All unity related MCP always skip proper manual validations/ci/different-os/tries to sell bloatware.
@@ -22,6 +28,8 @@ Developer must have a proper control over the tools used, including:
 
 - optional override path to the tools such as unity-editor, MsBuild, so all of the CI/tools will work in cases for CI/cross-platform-OS/headless/ssh(docker, podman).
 - the same compilation and verification tools as is used by the agent.
+- developer must run the same tools and have ability to view output of the tool.
+- avoid bloating by not using python/js/other junk. All you need is bash and tools for unity (self-containing in the docker).
 
 ## Quick Navigation
 
@@ -53,8 +61,9 @@ codex plugin marketplace add https://github.com/studentutu/kiss-unity-mcp.git --
 ```
 
 In the Codex app's plugin directory, select **Studentutu Plugins** and install
-**kiss-unity-mcp**. Start a new task and request `$kiss-unity-mcp-setup` with the
-absolute Unity project path. See the [Codex plugin documentation](https://developers.openai.com/plugins/build/plugins).
+**kiss-unity-mcp**.
+Start a new task and request `$kiss-unity-mcp-setup` with the absolute Unity project path.
+See the [Codex plugin documentation](https://developers.openai.com/plugins/build/plugins).
 
 ### Claude Code
 
@@ -71,10 +80,13 @@ Check `/mcp` for the plugin's `kiss-unity-mcp` server. Git must be on PATH;
 on Windows, install Git for Windows so the launcher can use its Bash.
 See the [Claude Code marketplace documentation](https://code.claude.com/docs/en/plugin-marketplaces).
 
-For both harnesses, setup is explicit and runs once per Unity project. Switching
-harnesses uses the existing installation and `tools.env`; matching content is a
-no-op. A different installed version can report a conflict and requires an
-explicit replacement request after reviewing the differences.
+### Install to the target project
+
+Start a new task and request `$kiss-unity-mcp-setup` with the absolute Unity project path.
+A different installed version can report a conflict and requires an explicit replacement request after reviewing the differences.
+
+For both harnesses, setup is explicit and runs once per Unity project.
+Switching harnesses uses the existing installation and `tools.env`; matching content is a no-op.
 
 ### Manual setup (without agents)
 
