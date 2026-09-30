@@ -124,8 +124,36 @@ acquire_run_lock() {
   mkdir "$RUN_LOCK" 2>/dev/null || fail "Another verification is running or left a lock: $RUN_LOCK. Check active processes before removing it."
   trap 'rmdir "$RUN_LOCK"' EXIT
 }
+# Unity leaves Temp/UnityLockfile behind when batchmode aborts (compiler errors,
+# crashes). Only a lock held by a live editor for this project blocks a run.
+unity_editor_running() {
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*)
+      # A running editor keeps the lockfile open; Windows then refuses deletion.
+      # A deletable lockfile is stale by definition.
+      rm -f -- "$UNITY_PROJECT_PATH/Temp/UnityLockfile" 2>/dev/null
+      [[ -e "$UNITY_PROJECT_PATH/Temp/UnityLockfile" ]];;
+    *)
+      # Advisory locks do not block deletion; look for an editor process on this project.
+      ps -axo command= 2>/dev/null | grep -i 'unity' | grep -v grep | grep -qF -- "$UNITY_PROJECT_PATH";;
+  esac
+}
 require_closed_editor() {
-  [[ ! -e "$UNITY_PROJECT_PATH/Temp/UnityLockfile" ]] || fail "Close Unity for $UNITY_PROJECT_PATH before a headless run. Lock: $UNITY_PROJECT_PATH/Temp/UnityLockfile. If stale, confirm Unity has exited before removing it."
+  local lock="$UNITY_PROJECT_PATH/Temp/UnityLockfile"
+  [[ -e "$lock" ]] || return 0
+  if unity_editor_running; then
+    fail "Close Unity for $UNITY_PROJECT_PATH before a headless run. Lock: $lock is held by a running editor."
+  fi
+  rm -f -- "$lock"
+  [[ ! -e "$lock" ]] || fail "Could not remove stale lock: $lock"
+  printf 'Removed stale %s left by a previous aborted Unity process (no editor is running for this project).\n' "$lock"
+}
+# Our headless process has exited; whatever lock it left behind is ours to remove.
+release_exited_editor_lock() {
+  local lock="$UNITY_PROJECT_PATH/Temp/UnityLockfile"
+  [[ -e "$lock" ]] || return 0
+  if unity_editor_running; then return 0; fi
+  rm -f -- "$lock" && printf 'Removed %s left by the exited headless Unity process.\n' "$lock"
 }
 prepare_output_file() { mkdir -p -- "$(dirname -- "$1")"; : > "$1"; }
 require_nonempty_file() { [[ -s "$1" ]] || fail "$2 missing or empty: $1"; }

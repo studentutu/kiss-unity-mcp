@@ -33,6 +33,8 @@ set +e
   -executeMethod SimpleUnityMCP.Editor.ShaderCompileTool.CompileAllProjectShaders
 unity_exit_code=$?
 set -e
+release_exited_editor_lock
+release_exited_editor_lock
 
 printf '\nUnity exit code: %d\n' "$unity_exit_code"
 require_nonempty_file "$UNITY_LOG" "Unity shader log"

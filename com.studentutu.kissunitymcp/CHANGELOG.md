@@ -4,6 +4,15 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-10-01
+
+- A `Temp/UnityLockfile` left behind by an aborted batchmode Unity (compiler
+  errors, crash) no longer blocks the next import, test, or shader run. The
+  wrappers remove a lock that no running editor holds (Windows: the file is
+  deletable only when no editor has it open; macOS/Linux: no Unity process for
+  this project) and report it; a lock held by a live editor is still refused.
+  Each wrapper also removes the lock its own exited headless process left.
+
 ## [0.7.0] - 2026-09-30
 
 - Run a single test, a single fixture (class), a category, or an assembly instead

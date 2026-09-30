@@ -311,8 +311,12 @@ packages, settings, or generated projects require another import. C# changes to
 importers, compilation directives, or editor initialization also require import;
 MSBuild cannot detect or execute those Unity semantics.
 
-Close interactive Unity before headless commands. The scripts refuse an existing
-Unity lock and serialize verification per project. They never kill your editor.
+Close interactive Unity before headless commands. The scripts refuse a
+`Temp/UnityLockfile` held by a running editor and serialize verification per
+project. A lockfile left behind by an aborted batchmode Unity (compiler errors,
+crash) is detected as stale (Windows: deletable only when no editor holds it open;
+macOS/Linux: no Unity process for this project), removed, and reported, so a
+failed compile never blocks the next run. They never kill your editor.
 Failures keep full logs. Exit codes are `0` verified success, `1` infrastructure /
 compile / import failure, and `2` failed or inconclusive tests. No discovered tests
 is a failure. `FAIL_ON_SKIPPED=1` also rejects skipped tests.

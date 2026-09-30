@@ -322,6 +322,32 @@ sed 's/total="1"/total="0"/;s/passed="1"/passed="0"/;s@<test-suite><test-case re
 run_stubbed_empty() ( export UNITY_STUB_RESULTS="$work/empty.xml"; run_stubbed_tests "$@" )
 expect_exit 1 run_stubbed_empty --filter NoSuchFixture
 grep -qF 'No test matched the selection (filter=NoSuchFixture' "$work/last.log" || fail 'Zero-match filter lacks its diagnostic'
+
+# Stale Temp/UnityLockfile (aborted batchmode) must not block; a live editor must.
+mkdir -p "$project2/Temp"
+printf 'stale\n' > "$project2/Temp/UnityLockfile"
+expect_exit 0 run_stubbed_tests --filter My.Fixture.Test
+grep -qF 'Removed stale' "$work/last.log" && [[ ! -e "$project2/Temp/UnityLockfile" ]] || fail 'Stale Unity lockfile blocked the run or was kept'
+# The stub editor aborts and leaves its lockfile behind, like Unity on compiler errors.
+cat > "$stub_hub/6000.3.15f1/Editor/Unity" <<'SH'
+#!/usr/bin/env bash
+project=''
+while (( $# )); do case "$1" in -projectPath) project="$2"; shift;; -logFile) printf 'Scripts have compiler errors.\nAborting batchmode due to failure:\n' > "$2"; shift;; esac; shift; done
+mkdir -p "$project/Temp"; printf 'left behind\n' > "$project/Temp/UnityLockfile"
+exit 1
+SH
+expect_exit 1 run_stubbed_tests --filter My.Fixture.Test
+[[ ! -e "$project2/Temp/UnityLockfile" ]] || fail 'Lockfile left by the exited headless Unity was not removed'
+grep -qF 'Removed' "$work/last.log" && grep -qF 'compiler errors' "$work/last.log" || fail 'Aborted run lost its diagnostics or lock notice'
+# Simulate a live editor on the Unix path: ps reports Unity on this project.
+printf 'held\n' > "$project2/Temp/UnityLockfile"
+export FAKE_UNITY_PROJECT="$project2"
+ps() { printf '/Applications/Unity/Hub/Editor/6000.3.15f1/Unity.app/Contents/MacOS/Unity -projectpath %s\n' "$FAKE_UNITY_PROJECT"; }
+export -f ps
+expect_exit 1 run_stubbed_tests --filter My.Fixture.Test
+grep -qF 'held by a running editor' "$work/last.log" && [[ -e "$project2/Temp/UnityLockfile" ]] || fail 'Live editor lock was not respected'
+unset -f ps; unset FAKE_UNITY_PROJECT
+rm -f "$project2/Temp/UnityLockfile"
 unset -f uname
 
 # Exercise the real resolver for each platform without launching a process.

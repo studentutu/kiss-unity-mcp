@@ -56,10 +56,12 @@ The original run's process status and freshness must be verified separately.
 Tool paths are selected in `<project>/.kissunitymcp/tools.env`, with environment
 overrides taking precedence. No path is hard-coded to a particular editor version,
 Rider version, or solution name. The exact Unity version gate also applies to
-MSBuild, but not parse-only. Headless Unity refuses an interactive editor lock;
-execution wrappers use a per-project run lock. Parse-only does not lock, so wait
+MSBuild, but not parse-only. Headless Unity refuses a `Temp/UnityLockfile` held by
+a running editor, removes one left behind by an aborted batchmode process (and the
+one its own exited process leaves), and uses a per-project run lock
+(`ProjectSettings/.kissunitymcp-run.lock`). Parse-only does not lock, so wait
 until writers finish before inspecting artifacts. Check processes before removing
-a stale lock.
+a stale run lock.
 
 A successful MSBuild process is a C# check only. Use Unity import to validate
 asset import, script initialization, compilation symbols and generated project

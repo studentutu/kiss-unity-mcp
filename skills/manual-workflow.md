@@ -16,7 +16,8 @@ custom tool paths) live in `<plugin-root>/Readme.md`, not here.
 - Exit `0` verified success. Exit `1` tool, compile, import, or infrastructure
   failure. Exit `2` failed or inconclusive tests.
 - Close the interactive Unity editor for that project before import, tests, or
-  shaders. Report a lock error to the user instead of working around it.
+  shaders. The tools remove a stale lock from an aborted run themselves; a
+  `held by a running editor` error means ask the user to close Unity.
 
 ## Never
 

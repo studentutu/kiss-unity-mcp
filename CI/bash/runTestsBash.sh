@@ -79,6 +79,8 @@ set +e
   ${selection_args[@]+"${selection_args[@]}"}
 unity_exit_code=$?
 set -e
+release_exited_editor_lock
+release_exited_editor_lock
 
 printf '\nUnity exit code: %d\n' "$unity_exit_code"
 
