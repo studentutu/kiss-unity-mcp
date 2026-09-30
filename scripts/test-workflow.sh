@@ -137,6 +137,20 @@ expect_exit 1 bash "$validator"
 grep -qF 'Missing skill UI metadata' "$work/last.log" || fail 'Missing skill UI metadata accepted'
 mv "$work/doctor-ui.yaml" "$validation_root/skills/kiss-unity-mcp-doctor/agents/openai.yaml"
 expect_exit 0 bash "$validator"
+# Skills stay agent-sized and never send the agent to a full log; one skill may own several tasks.
+printf '\nTask: kiss-unity-mcp: Run tests by filter\n' >> "$skill"
+expect_exit 1 bash "$validator"
+grep -qF 'End-user task must have exactly one skill' "$work/last.log" || fail 'Task owned by two skills accepted'
+cp "$work/doctor-skill.md" "$skill"
+printf '\nOn failure read the full Unity log.\n' >> "$skill"
+expect_exit 1 bash "$validator"
+grep -qF 'Skill tells the agent to read a full log' "$work/last.log" || fail 'Full-log instruction accepted'
+cp "$work/doctor-skill.md" "$skill"
+for i in $(seq 1 81); do printf 'padding line\n'; done >> "$skill"
+expect_exit 1 bash "$validator"
+grep -qF 'Skill exceeds 80 lines' "$work/last.log" || fail 'Oversized skill accepted'
+cp "$work/doctor-skill.md" "$skill"
+expect_exit 0 bash "$validator"
 
 project="$work/Project with spaces"
 mkdir -p "$project/Assets" "$project/Packages" "$project/ProjectSettings"
@@ -240,11 +254,75 @@ for import_status in 0 1 0; do
   grep -qxF "IMPORT_DISPATCH:$project2" "$work/last.log" || fail 'Renamed CLI did not reach import wrapper'
   printf '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"unity_import","arguments":{"project_path":%s}}}\n' "$(quote "$project2")" > "$work/requests"
   bash "$validation_root/scripts/mcp-server.sh" < "$work/requests" > "$work/response"
-  import_error=false; (( import_status==0 )) || import_error=true
+  import_error=false; import_verdict='unity_import: exit 0 (verified success)'
+  if (( import_status!=0 )); then import_error=true; import_verdict='unity_import: exit 1 (tool, compile, or infrastructure failure)'; fi
   [[ "$(json_get "$work/response" /result/isError)" == "$import_error" &&
-     "$(json_get "$work/response" /result/content/0/text)" == "IMPORT_DISPATCH:$project2" ]] || fail 'MCP import dispatch or failure propagation changed'
+     "$(json_get "$work/response" /result/content/0/text)" == "$import_verdict"$'\n'"IMPORT_DISPATCH:$project2" ]] || fail 'MCP import dispatch, verdict line, or failure propagation changed'
 done
 unset IMPORT_STUB_EXIT
+
+# Test selection flags must travel CLI -> dispatcher -> wrapper and MCP -> wrapper.
+cat > "$validation_root/CI/bash/runTestsBash.sh" <<'SH'
+#!/usr/bin/env bash
+printf 'TESTS_DISPATCH:%s' "$UNITY_PROJECT_PATH"; if (( $# )); then printf ':%s' "$@"; fi; printf '\n'
+SH
+expect_exit 0 bash "$validation_root/scripts/unity.sh" tests "$project2" --filter 'My.Fixture.Test(1)' --platform PlayMode --category Slow --assembly Tests
+grep -qxF "TESTS_DISPATCH:$project2:--filter:My.Fixture.Test(1):--platform:PlayMode:--category:Slow:--assembly:Tests" "$work/last.log" || fail 'CLI dropped test selection flags'
+printf '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"unity_tests","arguments":{"project_path":%s,"test_filter":"My.Fixture","test_platform":"PlayMode","test_category":"Slow","assembly_names":"Tests"}}}\n' "$(quote "$project2")" > "$work/requests"
+bash "$validation_root/scripts/mcp-server.sh" < "$work/requests" > "$work/response"
+[[ "$(json_get "$work/response" /result/isError)" == false ]] || fail 'MCP filtered test call failed'
+json_get "$work/response" /result/content/0/text > "$work/tests-result"
+grep -qxF 'unity_tests: exit 0 (verified success)' "$work/tests-result" || fail 'MCP result lacks the verdict line'
+grep -qxF "TESTS_DISPATCH:$project2:--filter:My.Fixture:--platform:PlayMode:--category:Slow:--assembly:Tests" "$work/tests-result" || fail 'MCP dropped test selection arguments'
+printf '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"unity_tests","arguments":{"project_path":%s}}}\n' "$(quote "$project2")" > "$work/requests"
+bash "$validation_root/scripts/mcp-server.sh" < "$work/requests" > "$work/response"
+[[ "$(json_get "$work/response" /result/content/0/text)" == *"TESTS_DISPATCH:$project2" ]] || fail 'MCP unfiltered test call added arguments'
+printf '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"unity_tests","arguments":{"project_path":%s,"test_filter":["a"]}}}\n' "$(quote "$project2")" > "$work/requests"
+bash "$validation_root/scripts/mcp-server.sh" < "$work/requests" > "$work/response"
+[[ "$(json_get "$work/response" /result/isError)" == true && "$(json_get "$work/response" /result/content/0/text)" == *'test_filter must be a string'* ]] || fail 'MCP accepted a non-string test_filter'
+
+# The real wrapper must hand the selection to Unity and validate it. Stub only the editor.
+stub_hub="$work/stub hub"
+printf '<test-run
+ result="Passed" total="1" passed="1" failed="0" inconclusive="0" skipped="0"><test-suite><test-case result="Passed" /></test-suite></test-run>
+' > "$work/stub-results.xml"
+mkdir -p "$stub_hub/6000.3.15f1/Editor"
+cat > "$stub_hub/6000.3.15f1/Editor/Unity" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' "$@" > "$UNITY_STUB_ARGS"
+while (( $# )); do
+  case "$1" in
+    -logFile) printf 'Test run completed. Exiting with code 0\n' > "$2"; shift;;
+    -testResults) cp "$UNITY_STUB_RESULTS" "$2"; shift;;
+  esac
+  shift
+done
+SH
+chmod +x "$stub_hub/6000.3.15f1/Editor/Unity"
+uname() { printf 'Linux\n'; }
+export -f uname
+run_stubbed_tests() (
+  export UNITY_HUB_EDITOR_ROOT="$stub_hub" UNITY_PROJECT_PATH="$project2" UNITY_STUB_ARGS="$work/unity-args" UNITY_STUB_RESULTS="${UNITY_STUB_RESULTS:-$work/stub-results.xml}"
+  unset UNITY_EDITOR_PATH UNITY_TEST_FILTER UNITY_TEST_CATEGORY UNITY_TEST_ASSEMBLIES UNITY_TEST_PLATFORM
+  bash "$root/CI/bash/runTestsBash.sh" "$@"
+)
+expect_exit 0 run_stubbed_tests
+grep -qxF -- '-testPlatform' "$work/unity-args" && ! grep -qxF -- '-testFilter' "$work/unity-args" || fail 'Unfiltered run passed a filter to Unity'
+expect_exit 0 run_stubbed_tests --filter 'My.Fixture.Test(1)' --category Slow --assembly Tests --platform PlayMode
+printf '%s\n' -testFilter 'My.Fixture.Test(1)' -testCategory Slow -assemblyNames Tests > "$work/expected-args"
+grep -A1 -xF -- '-testFilter' "$work/unity-args" | grep -qxF 'My.Fixture.Test(1)' || fail 'Filter did not reach Unity'
+grep -A1 -xF -- '-testCategory' "$work/unity-args" | grep -qxF 'Slow' || fail 'Category did not reach Unity'
+grep -A1 -xF -- '-assemblyNames' "$work/unity-args" | grep -qxF 'Tests' || fail 'Assembly did not reach Unity'
+grep -A1 -xF -- '-testPlatform' "$work/unity-args" | grep -qxF 'PlayMode' || fail 'Platform did not reach Unity'
+grep -qF 'Test filter:   My.Fixture.Test(1)' "$work/last.log" || fail 'Filter missing from the run context'
+expect_exit 1 run_stubbed_tests --platform Standalone
+expect_exit 1 run_stubbed_tests --filter -runTests
+expect_exit 1 run_stubbed_tests --bogus
+sed 's/total="1"/total="0"/;s/passed="1"/passed="0"/;s@<test-suite><test-case result="Passed" /></test-suite>@@' "$work/stub-results.xml" > "$work/empty.xml"
+run_stubbed_empty() ( export UNITY_STUB_RESULTS="$work/empty.xml"; run_stubbed_tests "$@" )
+expect_exit 1 run_stubbed_empty --filter NoSuchFixture
+grep -qF 'No test matched the selection (filter=NoSuchFixture' "$work/last.log" || fail 'Zero-match filter lacks its diagnostic'
+unset -f uname
 
 # Exercise the real resolver for each platform without launching a process.
 export UNITY_PROJECT_PATH="$project2"

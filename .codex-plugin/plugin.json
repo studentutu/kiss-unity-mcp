@@ -1,6 +1,6 @@
 {
   "name": "kiss-unity-mcp",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Bash-only Unity setup, verified import, fast Rider/MSBuild compilation, tests and manual VS Code actions.",
   "author": {
     "name": "Roman",

@@ -4,7 +4,9 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$SCRIPT_DIR/common.sh"
 action="${1:-help}"
 if [[ "$action" == help || "$action" == --help ]]; then
-  printf 'Usage: bash %s <doctor|unity-import-long-compile|build|tests|shaders|parse-tests> [Unity project]\n' "$0"
+  printf 'Usage: bash %s <doctor|unity-import-long-compile|build|tests|shaders|parse-tests> [Unity project] [action options]\n' "$0"
+  printf 'tests options: [--filter <Fixture|Namespace.Fixture.Test|regex>] [--category <name>] [--assembly <name>] [--platform EditMode|PlayMode]\n'
+  printf 'parse-tests options: [--test-results <xml>] [--unity-log <log>]\n'
   printf 'Edit <project>/.kissunitymcp/tools.env to select Unity Hub, Unity editor and Rider/MSBuild.\n'
   exit 0
 fi

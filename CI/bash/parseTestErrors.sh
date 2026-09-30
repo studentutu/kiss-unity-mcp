@@ -31,9 +31,16 @@ done
 require_command awk
 require_command sed
 require_nonempty_file "$UNITY_LOG" "Unity test log"
-require_nonempty_file "$TEST_RESULTS" "Unity test results"
-
 extract_unity_diagnostics "$UNITY_LOG" "$DIAGNOSTICS_FILE"
+# Compiler or import errors abort Unity before any XML exists. Surface them here
+# so the caller never has to open the full editor log to learn why.
+if [[ ! -s "$TEST_RESULTS" ]]; then
+  if [[ -s "$DIAGNOSTICS_FILE" ]]; then
+    printf 'ERROR: Unity produced no test results. Diagnostics extracted from the Unity log:\n' >&2
+    sed -n '1,200p' "$DIAGNOSTICS_FILE" >&2
+  fi
+  fail "Unity test results missing or empty: $TEST_RESULTS (compile, import, or startup failure; see the diagnostics above)"
+fi
 
 root_line="$(awk -f "$SCRIPT_DIR/nunit-summary.awk" "$TEST_RESULTS")" || fail "Malformed, truncated, or inconsistent NUnit XML: $TEST_RESULTS"
 [[ -n "$root_line" ]] || fail "The test result does not contain an NUnit <test-run> root: $TEST_RESULTS"
@@ -116,7 +123,12 @@ if [[ -s "$DIAGNOSTICS_FILE" ]]; then
 fi
 
 if (( total == 0 )); then
-  printf 'ERROR: Unity completed without discovering tests. Add tests and ensure the project includes Unity Test Framework.\n' >&2
+  if [[ -n "${UNITY_TEST_FILTER:-}${UNITY_TEST_CATEGORY:-}${UNITY_TEST_ASSEMBLIES:-}" ]]; then
+    printf 'ERROR: No test matched the selection (filter=%s category=%s assembly=%s). Use the NUnit full name, e.g. Namespace.Fixture.Test, or the fixture name.\n' \
+      "${UNITY_TEST_FILTER:-}" "${UNITY_TEST_CATEGORY:-}" "${UNITY_TEST_ASSEMBLIES:-}" >&2
+  else
+    printf 'ERROR: Unity completed without discovering tests. Add tests and ensure the project includes Unity Test Framework.\n' >&2
+  fi
   status=1
 fi
 

@@ -126,9 +126,16 @@ bash .kissunitymcp/scripts/unity.sh doctor
 bash .kissunitymcp/scripts/unity.sh unity-import-long-compile
 bash .kissunitymcp/scripts/unity.sh build
 bash .kissunitymcp/scripts/unity.sh tests
+bash .kissunitymcp/scripts/unity.sh tests . --filter My.Namespace.MyFixture
+bash .kissunitymcp/scripts/unity.sh tests . --filter My.Namespace.MyFixture.MyTest
 bash .kissunitymcp/scripts/unity.sh shaders
 bash .kissunitymcp/scripts/unity.sh parse-tests
 ```
+
+`tests` accepts `--filter` (fixture, single test, or a regex over the NUnit full
+name; `;`-separated list), `--category`, `--assembly`, and `--platform
+EditMode|PlayMode`, so long suites can be skipped while iterating. MCP `unity_tests`
+exposes the same as `test_filter`, `test_category`, `assembly_names`, `test_platform`.
 
 ### Manual use without agents
 
@@ -139,7 +146,8 @@ Open the project in VS Code and choose **Terminal > Run Task > kiss-unity-mcp**.
 If the project already had tasks, open its generated
 `.vscode/kissunitymcp.code-workspace` to access the additional tasks (copy them to your `.vscode/tasks.json` in case you don't want to override it, but need them).
 Use **Check tool paths**, **unity-import-long-compile**, then **Fast MSBuild**.
-Use **EditMode tests** to run all tests, or **Parse test results** to inspect
+Use **EditMode tests** to run all tests, **Run tests by filter** for one fixture
+or one test (prompts for the selection), or **Parse test results** to inspect
 existing NUnit XML and the matching Unity log without launching Unity.
 **Open tool settings** opens the one configuration file. It uses VS Code's `code`
 CLI; if that CLI is not on PATH, open `.kissunitymcp/tools.env` in the Explorer.
@@ -157,23 +165,29 @@ the dispatcher update. Verify the command from Bash against the target project.
 
 ### Agents and end-user task skills
 
-The [skill catalog](skills/README.md) exposes the seven actions in
-`templates/tasks.json`: tool-path checks, import, fast MSBuild, EditMode tests,
-parsing saved test results, shader compilation, and tool settings, plus the
-[explicit one-time setup skill](skills/kiss-unity-mcp-setup/SKILL.md). Each includes
-manual usage, prerequisites, and evidence to check; MCP is optional. Start with the
-[shared manual workflow](skills/manual-workflow.md) for absolute paths, VS Code,
-CI/SSH usage, and the exact editor gate. Setup is the sole non-task skill and never
-a routine preamble. The
-[run-parsetests skill](skills/kiss-unity-mcp-run-parsetests/SKILL.md) uses the
-same `parse-tests` action as the manual task. Compatibility wrappers and repository
-maintenance remain documented manual APIs, not skills.
+The [skill catalog](skills/README.md) covers the actions in
+`templates/tasks.json`: tool-path checks, import, fast MSBuild, tests (suite or
+filtered), parsing saved test results, shader compilation, and tool settings, plus
+the [explicit one-time setup skill](skills/kiss-unity-mcp-setup/SKILL.md). Skills
+are deliberately short and agent-facing: which MCP tool to call, which arguments,
+and how to read the result. The [shared agent contract](skills/manual-workflow.md)
+adds the rules every skill assumes: never launch Unity or MSBuild by hand, never
+write new scripts, never read full Unity logs (the result already contains the
+verdict, failures, and extracted diagnostics), never run setup as a preamble.
+Human-facing details such as environment overrides and marker names stay in this
+manual and in [the CI manual](CI/RunUnityTestsReadme.md). Setup is the sole
+non-task skill. Compatibility wrappers and repository maintenance remain documented
+manual APIs, not skills.
 
-MCP exposes inspection, explicit setup, doctor, import, fast build, tests, and
-shader checks. It is a thin sequential adapter over the same Bash API, using
+MCP exposes inspection, explicit setup, doctor, import, fast build, tests (with
+`test_filter`, `test_category`, `assembly_names`, `test_platform`), and shader
+checks. It is a thin sequential adapter over the same Bash API, using
 [newline-delimited JSON-RPC over stdio](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports).
-Run it with `bash scripts/mcp-server.sh`; stdout contains protocol messages only.
-No conflicting replacement operation is exposed through MCP.
+Every `unity_*` result starts with a verdict line, `<tool>: exit N (...)`, followed by
+the last 24 KB of the wrapper output (summary, failures, diagnostics are at the end);
+inspection and setup return their JSON unchanged. Run it with
+`bash scripts/mcp-server.sh`; stdout contains protocol messages only. No conflicting
+replacement operation is exposed through MCP.
 
 ```bash
 bash scripts/validate-plugin.sh

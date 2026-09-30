@@ -20,9 +20,27 @@ bash scripts/unity.sh shaders /path/to/project
 bash scripts/unity.sh parse-tests /path/to/project
 ```
 
+Run one fixture or one test instead of the suite (Unity `-testFilter`: a regex
+over the NUnit full name, semicolon-separated list allowed):
+
+```bash
+bash scripts/unity.sh tests /path/to/project --filter My.Namespace.MyFixture
+bash scripts/unity.sh tests /path/to/project --filter My.Namespace.MyFixture.MyTest
+bash scripts/unity.sh tests /path/to/project --category Smoke --assembly Tests --platform PlayMode
+```
+
+`--category` maps to `-testCategory`, `--assembly` to `-assemblyNames`, and
+`--platform` to `-testPlatform` (EditMode default, or PlayMode). The environment
+equivalents are `UNITY_TEST_FILTER`, `UNITY_TEST_CATEGORY`, `UNITY_TEST_ASSEMBLIES`,
+and `UNITY_TEST_PLATFORM`; flags take precedence. A selection that matches no test
+exits `1` with `No test matched the selection`, never a green result.
+
 Direct CI entry points remain available with `UNITY_PROJECT_PATH` set. Full logs
 and results default to `<project>/Logs/kissunitymcp`; `CI_OUTPUT_DIR` overrides
-that location. `UNITY_TEST_PLATFORM` defaults to EditMode. Keep generated logs,
+that location, and `UNITY_TEST_LOG_PATH`, `UNITY_TEST_RESULTS_PATH`,
+`UNITY_DIAGNOSTICS_PATH`, `UNITY_COMPILE_LOG_PATH`, `UNITY_SHADER_LOG_PATH`, and
+`UNITY_SHADER_DIAGNOSTICS_PATH` override single artifacts. `FAIL_ON_SKIPPED=1`
+rejects skipped tests. None of these belong in `tools.env`. Keep generated logs,
 XML, snapshots and diagnostics out of source control.
 
 **kiss-unity-mcp: Parse test results** and the

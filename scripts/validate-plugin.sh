@@ -82,16 +82,23 @@ for directory in skills/*; do
   done
   grep -qF '<plugin-root>/skills/manual-workflow.md' "$file" || fail "Missing shared manual workflow reference: $file"
   awk '/^```bash$/ { code=1; next } /^```$/ { code=0 } code { print }' "$file" | bash -n || fail "Invalid Bash example: $file"
+  # Skills are agent-facing: small, and never an invitation to read whole logs.
+  (( $(wc -l < "$file") <= 80 )) || fail "Skill exceeds 80 lines; keep skills agent-sized: $file"
+  if grep -qiE 'read (the |its |both |all )?(full|complete|entire|whole) (unity )?(editor |test )?(log|xml|logs)' "$file"; then
+    fail "Skill tells the agent to read a full log; the tool result is the evidence: $file"
+  fi
   task="$(sed -n 's/^Task: //p' "$file")"
   # Explicit one-time setup is the sole non-task skill; keep normal checks above.
   if [[ "$name" == kiss-unity-mcp-setup ]]; then
     [[ -z "$task" ]] || fail 'Setup skill must remain separate from VS Code tasks'
     continue
   fi
-  [[ -n "$task" && "$task" != *$'\n'* ]] || fail "Skill must declare one end-user task: $file"
-  matched=0
-  for label in "${task_labels[@]}"; do [[ "$task" != "$label" ]] || matched=1; done
-  (( matched )) || fail "Skill task is not in templates/tasks.json: $task ($file)"
+  [[ -n "$task" ]] || fail "Skill must declare at least one end-user task: $file"
+  while IFS= read -r task_line; do
+    matched=0
+    for label in "${task_labels[@]}"; do [[ "$task_line" != "$label" ]] || matched=1; done
+    (( matched )) || fail "Skill task is not in templates/tasks.json: $task_line ($file)"
+  done <<< "$task"
 done
 for label in "${task_labels[@]}"; do
   owners="$(grep -Fxl -- "Task: $label" skills/*/SKILL.md || true)"

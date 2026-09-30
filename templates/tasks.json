@@ -62,6 +62,23 @@
       "problemMatcher": []
     },
     {
+      "label": "kiss-unity-mcp: Run tests by filter",
+      "type": "process",
+      "command": "git",
+      "args": [
+        "-c",
+        "alias.unity-bash=!bash",
+        "unity-bash",
+        "${workspaceFolder}/.kissunitymcp/scripts/unity.sh",
+        "tests",
+        "${workspaceFolder}",
+        "--filter",
+        "${input:kissTestFilter}"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
       "label": "kiss-unity-mcp: Parse test results",
       "type": "process",
       "command": "git",
@@ -101,6 +118,13 @@
       ],
       "group": "build",
       "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "kissTestFilter",
+      "type": "promptString",
+      "description": "Test selection: Fixture, Namespace.Fixture.Test, or a regex over the NUnit full name"
     }
   ]
 }

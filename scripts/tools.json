@@ -2,7 +2,7 @@
   "tools": [
     {
       "name": "inspect_unity_project",
-      "description": "Read-only inspection of package and manual tooling setup.",
+      "description": "Read-only check whether kiss-unity-mcp is installed in a Unity project. Returns JSON state: installed, not_installed, or conflict. Never installs anything.",
       "inputSchema": {
         "additionalProperties": false,
         "required": [
@@ -11,7 +11,7 @@
         "properties": {
           "project_path": {
             "type": "string",
-            "description": "Unity project root path."
+            "description": "Absolute Unity project root path."
           }
         },
         "type": "object"
@@ -19,7 +19,7 @@
     },
     {
       "name": "setup_unity_project",
-      "description": "Explicit one-time filesystem setup; refuses conflicts. Installs package, Bash tooling, settings and VS Code workspace.",
+      "description": "Explicit one-time filesystem install of the embedded package, Bash tools, tools.env and VS Code workspace. Only when the user asks for setup and inspect reported not_installed. Refuses conflicts; never opens Unity or edits Packages/manifest.json.",
       "inputSchema": {
         "additionalProperties": false,
         "required": [
@@ -28,11 +28,12 @@
         "properties": {
           "project_path": {
             "type": "string",
-            "description": "Unity project root path."
+            "description": "Absolute Unity project root path."
           },
           "dry_run": {
             "type": "boolean",
-            "default": false
+            "default": false,
+            "description": "true = inspect only, identical to inspect_unity_project."
           }
         },
         "type": "object"
@@ -40,7 +41,7 @@
     },
     {
       "name": "unity_doctor",
-      "description": "Resolve exact project Unity editor and Rider/MSBuild without launching them.",
+      "description": "Resolve the project's exact Unity editor and Rider/MSBuild paths without launching them. Use when a tool reports a missing editor or ambiguous MSBuild. Fix paths in <project>/.kissunitymcp/tools.env.",
       "inputSchema": {
         "additionalProperties": false,
         "required": [
@@ -49,7 +50,7 @@
         "properties": {
           "project_path": {
             "type": "string",
-            "description": "Unity project root path."
+            "description": "Absolute Unity project root path."
           }
         },
         "type": "object"
@@ -57,7 +58,7 @@
     },
     {
       "name": "unity_import",
-      "description": "Authoritative Unity import/compile and solution generation. Close interactive Unity first. Full editor log is retained.",
+      "description": "Authoritative headless Unity import + full C# compile + solution regeneration (slow, minutes). Required after adding/removing files, assets, asmdefs, packages, shaders or settings, and before the first unity_build. Close the interactive Unity editor first. The result already contains the verdict and extracted diagnostics.",
       "inputSchema": {
         "additionalProperties": false,
         "required": [
@@ -66,7 +67,7 @@
         "properties": {
           "project_path": {
             "type": "string",
-            "description": "Unity project root path."
+            "description": "Absolute Unity project root path."
           }
         },
         "type": "object"
@@ -74,7 +75,7 @@
     },
     {
       "name": "unity_build",
-      "description": "Fast incremental MSBuild after a verified Unity import. Full diagnostic log is retained.",
+      "description": "Fast incremental MSBuild of the generated solution without launching Unity (seconds). Valid only for edits to existing .cs files after a successful unity_import; a stale-snapshot error means run unity_import instead. The result already contains the verdict and compiler errors.",
       "inputSchema": {
         "additionalProperties": false,
         "required": [
@@ -83,7 +84,7 @@
         "properties": {
           "project_path": {
             "type": "string",
-            "description": "Unity project root path."
+            "description": "Absolute Unity project root path."
           }
         },
         "type": "object"
@@ -91,7 +92,7 @@
     },
     {
       "name": "unity_tests",
-      "description": "Run project EditMode tests; requires Unity Test Framework already installed by the project.",
+      "description": "Run Unity Test Framework tests headlessly (no open editor). Prefer test_filter to run one fixture or one test instead of the whole suite. Close the interactive Unity editor first. The result already contains the summary, each failure's message and stack trace, and extracted diagnostics; exit 2 = failing tests, exit 1 = tool/compile failure.",
       "inputSchema": {
         "additionalProperties": false,
         "required": [
@@ -100,7 +101,28 @@
         "properties": {
           "project_path": {
             "type": "string",
-            "description": "Unity project root path."
+            "description": "Absolute Unity project root path."
+          },
+          "test_filter": {
+            "type": "string",
+            "description": "Run only matching tests. Fixture (class): \"MyFixture\" or \"My.Namespace.MyFixture\"; single test: \"My.Namespace.MyFixture.MyTest\"; parameterized: \"MyFixture.MyTest(1)\". Regex over the NUnit full name; semicolon-separated list allowed. Omit to run everything."
+          },
+          "test_platform": {
+            "type": "string",
+            "enum": [
+              "EditMode",
+              "PlayMode"
+            ],
+            "default": "EditMode",
+            "description": "EditMode (default, fast) or PlayMode."
+          },
+          "test_category": {
+            "type": "string",
+            "description": "Run only tests with this NUnit [Category]; semicolon-separated list allowed."
+          },
+          "assembly_names": {
+            "type": "string",
+            "description": "Run only tests in these test assemblies (asmdef names); semicolon-separated list allowed."
           }
         },
         "type": "object"
@@ -108,7 +130,7 @@
     },
     {
       "name": "unity_shaders",
-      "description": "Reimport shaders and check Unity shader diagnostics. Close interactive Unity first.",
+      "description": "Reimport all project shaders headlessly and report Unity shader compiler errors. Close the interactive Unity editor first. The result already contains the verdict and extracted shader diagnostics.",
       "inputSchema": {
         "additionalProperties": false,
         "required": [
@@ -117,7 +139,7 @@
         "properties": {
           "project_path": {
             "type": "string",
-            "description": "Unity project root path."
+            "description": "Absolute Unity project root path."
           }
         },
         "type": "object"

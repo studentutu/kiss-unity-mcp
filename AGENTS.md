@@ -37,12 +37,19 @@ copy before swapping it into the consumer project's `Packages/` directory.
   Keep installed filesystem paths and the Unity package identity stable.
 - MCP server: `scripts/mcp-server.sh` (thin stdio adapter)
 - Setup CLI: `scripts/setup-unity-project.sh`
-- Manual API: `scripts/unity.sh <doctor|unity-import-long-compile|build|tests|shaders|parse-tests> <project>`
+- Manual API: `scripts/unity.sh <doctor|unity-import-long-compile|build|tests|shaders|parse-tests> <project> [options]`;
+  `tests` accepts `--filter <Fixture|Namespace.Fixture.Test|regex>`, `--category`, `--assembly`, `--platform EditMode|PlayMode`
+  (MCP `unity_tests`: `test_filter`, `test_category`, `assembly_names`, `test_platform`)
 - Plugin validation: `scripts/validate-plugin.sh`
 - Workflow regression tests: `scripts/test-workflow.sh`
 - End-user task skills and manual workflow: `skills/README.md`, `skills/manual-workflow.md`
 - Skill scope: actions exposed by `templates/tasks.json`, plus explicit one-time setup
   in `skills/kiss-unity-mcp-setup/SKILL.md`; no maintenance or compatibility skills.
+- Skills are agent-facing and small (validator: at most 80 lines, never "read the
+  full log"). They name the MCP tool, its arguments, and how to read the result.
+  Internals (env overrides, marker names, log formats) belong in `Readme.md` and
+  `CI/RunUnityTestsReadme.md`, not in skills. Every `unity_*` MCP result starts with a
+  verdict line `<tool>: exit N (...)`; inspection/setup results stay pure JSON.
 - Unity package: `com.studentutu.kissunitymcp/`
 - Unity CI: `CI/bash/`
 
@@ -101,7 +108,7 @@ Run repository commands only through these entry points:
 | Setup behavior | `bash scripts/setup-unity-project.sh <temp-project>` | JSON action/state plus copied digest |
 | Long Unity compile/import | `bash ./CI/bash/rebuildSolutionFromUnityItself.sh` | `Logs/kissunitymcp/UnityCompile.log`, diagnostics, `PROJECT_FILES_SYNCED` |
 | Quick C# follow-up | `bash ./CI/bash/rebuildSolutionWithRiderMsBuild.sh` | `Logs/kissunitymcp/RiderMsBuild.log`, diagnostics |
-| EditMode tests | `bash ./CI/bash/runTestsBash.sh` | `Logs/kissunitymcp/UnityTests.log`, fresh NUnit XML |
+| Tests (suite, fixture, or single test) | `bash ./CI/bash/runTestsBash.sh [--filter <name>] [--platform EditMode\|PlayMode]` | `Logs/kissunitymcp/UnityTests.log`, fresh NUnit XML; zero matches is exit `1` |
 | Test parse only | `bash ./CI/bash/parseTestErrors.sh` | Parsed existing log/XML; no new Unity run |
 | Shader compile | `bash ./CI/bash/compileShaders.sh` | `Logs/kissunitymcp/UnityShaders.log`, diagnostics, pass marker |
 

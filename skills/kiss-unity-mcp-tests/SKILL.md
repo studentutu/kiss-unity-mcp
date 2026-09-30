@@ -1,54 +1,46 @@
 ---
 name: kiss-unity-mcp-tests
-description: Use kiss-unity-mcp to run Unity EditMode tests headlessly and verify fresh NUnit XML plus the complete editor log. Use to execute tests, diagnose failed or inconclusive results, or enforce skipped-test policy; not merely to parse an earlier run.
+description: Run Unity Test Framework tests headlessly with kiss-unity-mcp, without an open editor. Use to run one test, one fixture (class), one category, or the whole EditMode/PlayMode suite and get the verdict, failures, and stack traces in one result. Do not run Unity yourself or read its logs.
 ---
 
 # Run Unity tests
 
-Read `<plugin-root>/skills/manual-workflow.md` first; use its absolute
-`PROJECT_PATH` and `TOOL_ROOT`.
+Read `<plugin-root>/skills/manual-workflow.md` first.
 
 Task: kiss-unity-mcp: EditMode tests
+Task: kiss-unity-mcp: Run tests by filter
 
 ## Procedure
 
-1. Require the consuming project's existing Unity Test Framework and actual tests.
-   Setup does not install that dependency or artificial passing tests.
-2. Read m_EditorVersion and require the wrapper's exact Hub editor gate. Save and
-   close interactive Unity for the selected project. Never delete live locks.
-3. Run the supported wrapper; it clears the selected log and XML before Unity
-   starts, acquires a project run lock, and invokes the result parser afterward.
-4. Review both the process status and parser evidence. Do not substitute old XML,
-   skip compiler errors, or use a console summary as the sole success signal.
+1. Prefer a narrow run. Set `test_filter` to the fixture (`MyFixture` or
+   `My.Namespace.MyFixture`) or the single test (`My.Namespace.MyFixture.MyTest`;
+   parameterized: `MyFixture.MyTest(1)`). It is a regex over the NUnit full name;
+   separate several with `;`. Run the whole suite only when the user asks.
+2. Call MCP server `kiss-unity-mcp` tool `unity_tests` with absolute
+   `project_path` and optional `test_filter`, `test_platform` (`EditMode`
+   default, or `PlayMode`), `test_category`, `assembly_names`.
+3. Report the verdict line, the `Test summary:` line, and each `-- Test.Name --`
+   failure block from the result. Nothing else needs to be read.
 
 ## Manual usage
 
 ```bash
-bash "$TOOL_ROOT/scripts/unity.sh" tests "$PROJECT_PATH"
+bash "$TOOL_ROOT/scripts/unity.sh" tests "$PROJECT_PATH" --filter "My.Namespace.MyFixture.MyTest"
 ```
 
-VS Code: **kiss-unity-mcp: EditMode tests**. MCP server `kiss-unity-mcp`: `unity_tests` with absolute
-`project_path`. The default `UNITY_TEST_PLATFORM` is `EditMode`; ensure an inherited
-override is not selecting another platform. `FAIL_ON_SKIPPED=1` rejects skipped
-tests. These are environment settings, not MCP arguments or tools.env keys.
+Omit `--filter` for the whole suite. Options: `--filter`, `--category`,
+`--assembly`, `--platform EditMode|PlayMode`. VS Code: **kiss-unity-mcp: EditMode
+tests** or **kiss-unity-mcp: Run tests by filter**.
 
 ## Verification
 
-Require exit `0`, Unity process status `0`, fresh nonempty
-`<project>/Logs/kissunitymcp/UnityTests.log` and
-`<project>/Logs/kissunitymcp/CITestOutput.xml`, and log marker
-`Test run completed. Exiting with code`. Require structurally valid, consistent
-NUnit counts, at least one discovered test, passing root `test-run`, and clean
-`<project>/Logs/kissunitymcp/CompileErrorsAfterUnityRun.txt`.
+- Exit `0`: `Test summary: result=Passed ...` and `Unity tests passed.`
+- Exit `2`: failing or inconclusive tests; each failure's name, message, and
+  stack trace is already in the result.
+- Exit `1`: compile or tool failure, no tests discovered, or a filter that
+  matched nothing (`No test matched the selection`). Fix the filter or code;
+  a compile error is reported in the extracted diagnostics in the result.
 
-Exit `1` includes infrastructure/compiler errors, missing or malformed artifacts,
-missing completion evidence, or no discovered tests. Exit `2` means failed or
-inconclusive tests, nonpassing results without infrastructure failure, or rejected
-skips with `FAIL_ON_SKIPPED=1`. Read failure names/messages/stacks and complete XML
-and log. If multiple signals fail, report all evidence, not just the exit category.
-
-Environment overrides are `CI_OUTPUT_DIR`, `UNITY_TEST_LOG_PATH`,
-`UNITY_TEST_RESULTS_PATH`, and `UNITY_DIAGNOSTICS_PATH`. Do not add them to
-tools.env. Use **kiss-unity-mcp: Parse test results** and
-`<plugin-root>/skills/kiss-unity-mcp-run-parsetests/SKILL.md` to re-read existing
-artifacts without launching Unity.
+Do not open `UnityTests.log` or `CITestOutput.xml`; do not rerun with a
+handwritten Unity command. To re-read a finished run without launching Unity,
+use `kiss-unity-mcp-run-parsetests`.

@@ -1,12 +1,12 @@
 ---
 name: kiss-unity-mcp-doctor
-description: Use kiss-unity-mcp to diagnose Unity Hub, exact editor version, and Rider/MSBuild tool paths without launching them. Use for manual tools.env configuration, missing tools, custom installations, or ambiguous Rider discovery.
+description: Resolve the exact Unity editor and Rider/MSBuild paths for a Unity project with kiss-unity-mcp, without launching them. Use when another kiss-unity-mcp tool reports a missing editor version or an ambiguous MSBuild, before asking the user to edit tools.env.
 ---
 
 # Check tool paths
 
-Read `<plugin-root>/skills/manual-workflow.md` first; use its absolute
-`PROJECT_PATH` and `TOOL_ROOT`. This checks paths, not compilation or licensing.
+Read `<plugin-root>/skills/manual-workflow.md` first. Nothing is launched,
+compiled, or installed.
 
 Task: kiss-unity-mcp: Check tool paths
 
@@ -16,32 +16,24 @@ Task: kiss-unity-mcp: Check tool paths
 bash "$TOOL_ROOT/scripts/unity.sh" doctor "$PROJECT_PATH"
 ```
 
-VS Code: **kiss-unity-mcp: Check tool paths**. MCP server `kiss-unity-mcp`: `unity_doctor` with absolute
-`project_path`. No Unity or MSBuild process is launched.
+VS Code: **kiss-unity-mcp: Check tool paths**.
 
 ## Procedure
 
-1. Read the project's exact m_EditorVersion. Require the platform's exact
-   versioned Hub executable; doctor lists installed versions and exports the
-   resolved editor for its own process. No nearest-version fallback is allowed.
-2. Resolve Rider/MSBuild. If there are zero or multiple candidates, have the
-   developer select the actual tool in `<project>/.kissunitymcp/tools.env`
-   with `RIDER_ROOT` or `RIDER_MSBUILD`.
-3. For custom/Toolbox installs, use Rider's **Settings > Build, Execution,
-   Deployment > Toolset and Build**. DLLs need a compatible executable
-   `MSBUILD_RUNTIME`; non-Windows MSBuild.exe needs a compatible Mono host for
-   actual builds. Use the existing toolchain, never download one automatically.
-4. Repeat doctor after the deliberate configuration change. Environment overrides
-   take precedence; do not source tools.env or add output/test settings to it.
+1. Call MCP server `kiss-unity-mcp` tool `unity_doctor` with absolute
+   `project_path`.
+2. Read the required Unity version, the installed editors list, and the
+   resolved MSBuild from the result.
+3. If the exact editor version is missing, tell the user to install that
+   version in Unity Hub or set `UNITY_HUB_EDITOR_ROOT` in
+   `<project>/.kissunitymcp/tools.env`. Never pick a different version.
+4. If MSBuild has zero or several candidates, tell the user to set
+   `RIDER_ROOT` or `RIDER_MSBUILD` (plus `MSBUILD_RUNTIME` for a `.dll`) in
+   `tools.env`, copied from Rider's **Toolset and Build** settings. Never
+   download a toolchain.
 
 ## Verification
 
-Require exit `0`, the required/installed editor listing, resolved configuration,
-editor and MSBuild paths, and `TOOL_PATHS_VERIFIED`. Exit `1` means path or
-configuration failure; report the exact missing/ambiguous candidates and settings
-path. An explicit editor override does not bypass the Hub-root/version gate.
-
-Doctor also requires Rider/MSBuild even if the next intended operation is only
-Unity import. It does not select/validate a solution, compile code, test runtime
-compatibility fully, verify a license, or establish an import snapshot. Use the
-appropriate operation skill to prove those outcomes, not the doctor marker.
+Exit `0` prints `TOOL_PATHS_VERIFIED` with both resolved paths. Exit `1`
+names the missing or ambiguous tool and the settings file. Doctor proves paths
+only; use the import, build, tests, or shaders skill to prove the code.

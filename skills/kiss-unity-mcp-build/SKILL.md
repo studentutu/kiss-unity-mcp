@@ -1,28 +1,24 @@
 ---
 name: kiss-unity-mcp-build
-description: Use kiss-unity-mcp to run fast incremental Rider/MSBuild C# verification after a successful Unity import. Use only for edits to existing C# contents with a current import snapshot; route asset or project membership changes back to Unity import.
+description: Fast incremental C# compile of a Unity project with Rider's MSBuild through kiss-unity-mcp, without launching Unity. Use after editing existing .cs files when a successful unity_import snapshot exists; a stale-snapshot error means run the import skill instead.
 ---
 
-# Fast Rider/MSBuild follow-up
+# Fast MSBuild follow-up
 
-Read `<plugin-root>/skills/manual-workflow.md` first; use absolute `PROJECT_PATH`
-and `TOOL_ROOT`. This checks generated C# projects, not player builds or Unity
-asset/import semantics.
+Read `<plugin-root>/skills/manual-workflow.md` first. This compiles the
+generated C# solution in seconds. It is not a player build and does not
+validate assets, imports, or editor initialization.
 
 Task: kiss-unity-mcp: Fast MSBuild
 
 ## Procedure
 
-1. Require a successful Unity import and a matching ImportSnapshot.txt. Only
-   existing `.cs` contents may change. Added/removed files or changed assets,
-   asmdefs, packages, settings, or generated projects require another import.
-2. Also choose import for changed compilation directives, importers, or editor
-   initialization. The fingerprint cannot detect those C# semantic changes.
-3. Read the exact project editor version. Even MSBuild must pass the wrapper's
-   exact Unity Hub/executable gate; no Unity-from-PATH or version substitution.
-4. Resolve the actual solution and compatible Rider toolchain using tools.env.
-   DLLs need `MSBUILD_RUNTIME`; non-Windows EXEs need a compatible Mono host.
-   Do not download runtimes or manufacture/edit an import snapshot.
+1. Use it only for edits to existing `.cs` contents. Added or removed files,
+   asmdef, package, asset, shader, or settings changes need `unity_import`.
+2. Call MCP server `kiss-unity-mcp` tool `unity_build` with absolute
+   `project_path`.
+3. Report the verdict line and the listed compiler errors (`error CSxxxx`
+   with file and line). Fix the code and call the tool again.
 
 ## Manual usage
 
@@ -30,20 +26,13 @@ Task: kiss-unity-mcp: Fast MSBuild
 bash "$TOOL_ROOT/scripts/unity.sh" build "$PROJECT_PATH"
 ```
 
-VS Code: **kiss-unity-mcp: Fast MSBuild**. MCP server `kiss-unity-mcp`: `unity_build` with absolute
-`project_path`. The wrapper uses incremental `/t:Build`, Debug / Any CPU, and a full
-diagnostic file logger; arbitrary MSBuild switches are not a supported CLI surface.
+VS Code: **kiss-unity-mcp: Fast MSBuild**.
 
 ## Verification
 
-Require exit `0`, both MSBuild and console-capture status `0`, fresh nonempty
-`<project>/Logs/kissunitymcp/RiderMsBuild.log`, its `Build succeeded.` summary,
-empty `<project>/Logs/kissunitymcp/MsBuildErrors.txt`, and console marker
-`SIMPLE_UNITY_MCP_CI:MSBUILD_PASSED`. Console navigation is retained separately in
-`<project>/Logs/kissunitymcp/RiderMsBuild.console.log`.
-
-Exit `1` is a configuration, stale-input, compile, logging, or infrastructure
-failure. Read the full diagnostic log; a quiet console or a process exit alone is
-not proof. A missing/mismatched snapshot calls for import, not a bypass. Use the
-same `CI_OUTPUT_DIR` environment override as import. Successful MSBuild does not
-prove editor initialization, asset imports, tests, shaders, or a player build.
+Exit `0` prints `SIMPLE_UNITY_MCP_CI:MSBUILD_PASSED`. Exit `1` with
+`Unity inputs or generated projects changed` or `No verified Unity import
+snapshot` means call `unity_import`, never bypass the snapshot. Exit `1` with
+`Set RIDER_ROOT or RIDER_MSBUILD` means call `unity_doctor` and have the user
+fix `<project>/.kissunitymcp/tools.env`. Other exit `1` output lists the
+compiler errors; do not open `RiderMsBuild.log`.
