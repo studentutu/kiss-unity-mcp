@@ -1,11 +1,49 @@
 #!/usr/bin/env bash
 # Sequential stdio MCP adapter. Every operation delegates to the manual Bash API.
+# Idle cost is one blocked `read`. While a tool runs, stdin is watched so a
+# closed client or notifications/cancelled never leaves Unity/MSBuild running.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/common.sh"
 work="$(mktemp -d "${TMPDIR:-/tmp}/unity-mcp-rpc.XXXXXXXX")"
 [[ "$work" == "${TMPDIR:-/tmp}"/unity-mcp-rpc.* ]] || fail "Unsafe temporary path"
-trap 'rm -rf -- "$work"' EXIT
+tool_pid=''
+trap 'stop_tool; rm -rf -- "$work"' EXIT
+trap 'exit 143' TERM HUP INT
+platform="$(uname -s)"
 version="$(json_get "$TOOLS_SCRIPT_DIR/../com.studentutu.kissunitymcp/package.json" /version)"
+# Every non-shell descendant of $1 as "pid winpid" (Unity, MSBuild and helpers).
+native_descendants() {
+  case "$platform" in
+    # Cygwin ps may prefix a status letter: PID PPID PGID WINPID ... COMMAND.
+    MINGW*|MSYS*|CYGWIN*) ps -e | awk 'NR>1 { if($1 !~ /^[0-9]+$/) { $1=""; $0=$0 } print $1, $2, $4, $NF }';;
+    *) ps -axo pid=,ppid=,comm= | awk '{ print $1, $2, $1, $NF }';;
+  esac | awk -v root="$1" '
+    { parent[$1]=$2; winpid[$1]=$3; name[$1]=$4 }
+    END {
+      tree[root]=1
+      do { grew=0; for(p in parent) if(!(p in tree) && (parent[p] in tree)) { tree[p]=1; grew=1 } } while(grew)
+      for(p in tree) if(p!=root && name[p] !~ /(^|\/)-?(ba)?sh(\.exe)?$/) print p, winpid[p]
+    }'
+}
+# Kill native work first so the Bash wrappers finish normally and release their
+# locks; hard-kill whatever remains after a grace period.
+stop_tool() {
+  local pid winpid tries=0
+  [[ -n "$tool_pid" ]] || return 0
+  while read -r pid winpid; do
+    case "$platform" in
+      MINGW*|MSYS*|CYGWIN*) MSYS2_ARG_CONV_EXCL='*' taskkill /F /T /PID "$winpid" >/dev/null 2>&1 || true;;
+      *) kill -TERM "$pid" 2>/dev/null || true;;
+    esac
+  done < <(native_descendants "$tool_pid")
+  while kill -0 "$tool_pid" 2>/dev/null && (( tries++ < 30 )); do sleep 1; done
+  if kill -0 "$tool_pid" 2>/dev/null; then
+    while read -r pid winpid; do kill -KILL "$pid" 2>/dev/null || true; done < <(native_descendants "$tool_pid")
+    kill -KILL "$tool_pid" 2>/dev/null || true
+  fi
+  wait "$tool_pid" 2>/dev/null || true
+  tool_pid=''
+}
 reply_error() { printf '{"jsonrpc":"2.0","id":%s,"error":{"code":%s,"message":%s}}\n' "$id" "$1" "$(quote "$2")"; }
 # Optional string argument: absent/null prints nothing; any other type is an error.
 optional_string() {
@@ -48,7 +86,45 @@ verdict_line() {
   case "$2" in 0) verdict='verified success';; 2) verdict='failed or inconclusive tests';; *) verdict='tool, compile, or infrastructure failure';; esac
   printf '%s: exit %s (%s)\n' "$1" "$2" "$verdict"
 }
-while IFS= read -r line || [[ -n "$line" ]]; do
+# A message that arrives while a tool runs: cancellation and ping are answered
+# now; everything else waits its turn (calls stay sequential).
+queued=()
+inflight() {
+  local ping_id
+  printf '%s\n' "$1" > "$work/inflight"
+  case "$(json_get "$work/inflight" /method 2>/dev/null || true)" in
+    notifications/cancelled)
+      if [[ "$(json_get "$work/inflight" /params/requestId raw 2>/dev/null || true)" == "$id" ]]; then cancelled=1; stop_tool; fi;;
+    ping)
+      if ping_id="$(json_get "$work/inflight" /id raw 2>/dev/null)"; then printf '{"jsonrpc":"2.0","id":%s,"result":{}}\n' "$ping_id"; fi;;
+    *) queued+=("$1");;
+  esac
+}
+# Run the call in the background and poll stdin with builtins only (no forks).
+# EOF means the client is gone: stop the tool and exit instead of orphaning it.
+run_tool() {
+  local message='' partial='' code
+  # Subshell isolates fail/errexit and keeps child processes off MCP stdin.
+  (set -e; tool_call) > "$work/output" 2>&1 < /dev/null &
+  tool_pid=$!
+  cancelled=0
+  while [[ -n "$tool_pid" ]] && kill -0 "$tool_pid" 2>/dev/null; do
+    if IFS= read -r -t 1 message; then inflight "$partial$message"; partial=''; continue; else code=$?; fi
+    if (( code > 128 )); then partial="$partial$message"; continue; fi
+    # EOF on a pipe is the MCP stdio shutdown; a request file just ended.
+    [[ ! -p /dev/stdin ]] || exit 0
+    [[ -z "$partial$message" ]] || queued+=("$partial$message")
+    break
+  done
+  status=0
+  if [[ -n "$tool_pid" ]]; then wait "$tool_pid" || status=$?; fi
+  tool_pid=''
+}
+next_message() {
+  if (( ${#queued[@]} )); then line="${queued[0]}"; queued=("${queued[@]:1}"); return 0; fi
+  IFS= read -r line || [[ -n "$line" ]]
+}
+while next_message; do
   [[ -n "$line" ]] || continue
   printf '%s\n' "$line" > "$work/request"
   id=null
@@ -65,11 +141,9 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     ping) printf '{"jsonrpc":"2.0","id":%s,"result":{}}\n' "$id";;
     tools/list) printf '{"jsonrpc":"2.0","id":%s,"result":%s}\n' "$id" "$(json_get "$TOOLS_SCRIPT_DIR/tools.json" '' raw)";;
     tools/call)
-      # Subshell isolates fail/errexit and keeps child processes off MCP stdin.
-      set +e
-      (set -e; tool_call) > "$work/output" 2>&1 < /dev/null
-      status=$?
-      set -e
+      run_tool
+      # A cancelled request gets no response (MCP cancellation contract).
+      (( ! cancelled )) || continue
       is_error=false; (( status==0 )) || is_error=true
       tool_name="$(json_get "$work/request" /params/name 2>/dev/null || printf 'tool')"
       summary="$(tail -c 24000 "$work/output")"

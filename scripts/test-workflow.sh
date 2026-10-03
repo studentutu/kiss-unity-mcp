@@ -281,6 +281,27 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"unity_te
 bash "$validation_root/scripts/mcp-server.sh" < "$work/requests" > "$work/response"
 [[ "$(json_get "$work/response" /result/isError)" == true && "$(json_get "$work/response" /result/content/0/text)" == *'test_filter must be a string'* ]] || fail 'MCP accepted a non-string test_filter'
 
+# A closed client (EOF on the stdio pipe) or a cancellation must stop the running
+# tool tree instead of orphaning it; ping is answered while a call runs.
+cat > "$validation_root/CI/bash/doctor.sh" <<'SH'
+#!/usr/bin/env bash
+sleep 60 & printf '%s\n' "$!" > "$DOCTOR_CHILD"; wait
+SH
+export DOCTOR_CHILD="$work/doctor-child"
+doctor_call="$(printf '{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"unity_doctor","arguments":{"project_path":%s}}}' "$(quote "$project2")")"
+started=$SECONDS
+{ printf '%s\n' "$doctor_call"; sleep 2; printf '%s\n' '{"jsonrpc":"2.0","id":8,"method":"ping"}'; sleep 2; } | bash "$validation_root/scripts/mcp-server.sh" > "$work/response"
+(( SECONDS-started < 20 )) && ! kill -0 "$(cat "$DOCTOR_CHILD")" 2>/dev/null || fail 'Closed MCP client left the tool running'
+[[ "$(cat "$work/response")" == '{"jsonrpc":"2.0","id":8,"result":{}}' ]] || fail 'MCP missed ping during a call or answered after shutdown'
+started=$SECONDS
+{ printf '%s\n' "$doctor_call"; sleep 2; printf '%s\n' '{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":7}}' '{"jsonrpc":"2.0","id":9,"method":"ping"}'; sleep 2; } | bash "$validation_root/scripts/mcp-server.sh" > "$work/response"
+(( SECONDS-started < 20 )) && ! kill -0 "$(cat "$DOCTOR_CHILD")" 2>/dev/null || fail 'Cancelled MCP call kept running'
+[[ "$(cat "$work/response")" == '{"jsonrpc":"2.0","id":9,"result":{}}' ]] || fail 'Cancelled MCP call was answered or later requests were lost'
+cp "$root/CI/bash/doctor.sh" "$validation_root/CI/bash/doctor.sh"
+unset DOCTOR_CHILD
+grep -qF '/nodeReuse:false' "$root/CI/bash/rebuildSolutionWithRiderMsBuild.sh" &&
+  grep -qF '/p:UseSharedCompilation=false' "$root/CI/bash/rebuildSolutionWithRiderMsBuild.sh" || fail 'Fast MSBuild must not leave MSBuild nodes or VBCSCompiler running'
+
 # The real wrapper must hand the selection to Unity and validate it. Stub only the editor.
 stub_hub="$work/stub hub"
 printf '<test-run

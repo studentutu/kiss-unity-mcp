@@ -201,6 +201,15 @@ inspection and setup return their JSON unchanged. Run it with
 `bash scripts/mcp-server.sh`; stdout contains protocol messages only. No conflicting
 replacement operation is exposed through MCP.
 
+Each agent session owns one stdio server (the transport is per client; there is no
+shared global server). Idle, it is Git's launcher plus one `bash` blocked on `read`;
+nothing else stays resident. While a call runs, the server keeps reading stdin:
+`ping` is answered, `notifications/cancelled` for the running call, or the client
+closing the pipe (session end, agent exit), kills the Unity/MSBuild process tree and
+lets the wrapper release its locks, so no editor outlives its caller. Fast MSBuild
+runs with `/nodeReuse:false` and `UseSharedCompilation=false`, leaving no MSBuild
+nodes or `VBCSCompiler` behind.
+
 ```bash
 bash scripts/validate-plugin.sh
 bash scripts/test-workflow.sh

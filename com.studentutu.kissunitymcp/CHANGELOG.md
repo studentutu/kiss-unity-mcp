@@ -4,6 +4,19 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-10-04
+
+- No process outlives its tool call. The MCP server watches stdin while a call
+  runs: when the client closes the pipe (session end, parallel agent exit) or sends
+  `notifications/cancelled`, it kills the Unity/MSBuild process tree and lets the
+  wrapper release its locks. Previously an orphaned headless Unity (~2 GB) kept
+  running to completion. `ping` is answered during a call; other requests queue.
+- Fast MSBuild runs with `/nodeReuse:false` and `UseSharedCompilation=false`.
+  Each build used to leave two `MSBuild.exe` nodes and `VBCSCompiler` (~390 MB on
+  Windows) alive for 10-15 minutes.
+- Lighter launcher: Git runs `bash` directly and the server is sourced into it,
+  dropping the resident `sh` process (Windows idle footprint 47.8 -> 41.6 MB private).
+
 ## [0.7.1] - 2026-10-01
 
 - A `Temp/UnityLockfile` left behind by an aborted batchmode Unity (compiler

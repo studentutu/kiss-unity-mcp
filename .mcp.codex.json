@@ -4,9 +4,10 @@
       "command": "git",
       "args": [
         "-c",
-        "alias.unity-bash=!f() { script=$1; shift; exec bash \"${GIT_PREFIX:-}$script\" \"$@\"; }; f",
+        "alias.unity-bash=!bash",
         "unity-bash",
-        "./scripts/mcp-server.sh"
+        "-c",
+        ". \"${GIT_PREFIX:-}./scripts/mcp-server.sh\""
       ],
       "cwd": ".",
       "enabled": true,
