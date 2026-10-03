@@ -30,7 +30,7 @@ custom tool paths) live in `<plugin-root>/Readme.md`, not here.
 - Never run setup as a preamble. Missing tooling means: tell the user setup is
   required and stop.
 - Never kill an editor, delete `Temp/UnityLockfile` or
-  `ProjectSettings/.kissunitymcp-run.lock`, edit `ProjectVersion.txt`, or use a
+  `Logs/kissunitymcp/run.lock`, edit `ProjectVersion.txt`, or use a
   different Unity version than the project declares.
 - Never run two operations on the same project at the same time.
 

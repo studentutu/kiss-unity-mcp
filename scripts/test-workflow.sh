@@ -349,6 +349,7 @@ mkdir -p "$project2/Temp"
 printf 'stale\n' > "$project2/Temp/UnityLockfile"
 expect_exit 0 run_stubbed_tests --filter My.Fixture.Test
 grep -qF 'Removed stale' "$work/last.log" && [[ ! -e "$project2/Temp/UnityLockfile" ]] || fail 'Stale Unity lockfile blocked the run or was kept'
+cp "$stub_hub/6000.3.15f1/Editor/Unity" "$work/unity-pass-stub"
 # The stub editor aborts and leaves its lockfile behind, like Unity on compiler errors.
 cat > "$stub_hub/6000.3.15f1/Editor/Unity" <<'SH'
 #!/usr/bin/env bash
@@ -369,6 +370,33 @@ expect_exit 1 run_stubbed_tests --filter My.Fixture.Test
 grep -qF 'held by a running editor' "$work/last.log" && [[ -e "$project2/Temp/UnityLockfile" ]] || fail 'Live editor lock was not respected'
 unset -f ps; unset FAKE_UNITY_PROJECT
 rm -f "$project2/Temp/UnityLockfile"
+
+# Concurrent runs (one MCP server per Codex subagent) queue on the project run lock.
+cp "$work/unity-pass-stub" "$stub_hub/6000.3.15f1/Editor/Unity"
+run_lock="$project2/Logs/kissunitymcp/run.lock"; mkdir -p "${run_lock%/*}"
+sleep 30 & holder=$!
+mkdir "$run_lock"; printf '%s\n' "$holder" > "$run_lock/owner"
+(sleep 3; kill "$holder") &
+expect_exit 0 run_stubbed_tests --filter My.Fixture.Test
+grep -qF 'Waiting for another verification' "$work/last.log" && [[ ! -e "$run_lock" ]] || fail 'Concurrent run did not wait for the lock holder'
+wait "$holder" 2>/dev/null || true
+# A lock whose owner exited (hard kill, or between mkdir and the owner write) is reclaimed.
+mkdir "$run_lock"; printf '%s\n' "$holder" > "$run_lock/owner"
+expect_exit 0 run_stubbed_tests --filter My.Fixture.Test
+grep -qF 'Reclaimed run lock' "$work/last.log" && [[ ! -e "$run_lock" ]] || fail 'Dead owner lock was not reclaimed'
+mkdir "$run_lock"
+expect_exit 0 run_stubbed_tests --filter My.Fixture.Test
+grep -qF 'Reclaimed run lock' "$work/last.log" && [[ ! -e "$run_lock" ]] || fail 'Ownerless run lock was not reclaimed'
+# A run of an older version (lock under ProjectSettings) still blocks.
+mkdir "$project2/ProjectSettings/.kissunitymcp-run.lock"
+expect_exit 1 run_stubbed_tests --filter My.Fixture.Test
+grep -qF 'An older kiss-unity-mcp run is active' "$work/last.log" || fail 'Legacy run lock was ignored'
+rmdir "$project2/ProjectSettings/.kissunitymcp-run.lock"
+# The import and the fast build hold the lock with different owners; the snapshot must not see it.
+fingerprint() ( export UNITY_PROJECT_PATH="$project2"; unset SIMPLE_UNITY_MCP_CI_COMMON_LOADED; source "$root/CI/bash/unity-ci-common.sh"; project_fingerprint )
+mkdir "$run_lock"; printf '1\n' > "$run_lock/owner"; locked_fingerprint="$(fingerprint)"
+rm -f "$run_lock/owner"; rmdir "$run_lock"
+[[ "$(fingerprint)" == "$locked_fingerprint" ]] || fail 'Run lock owner changes the fast-build fingerprint'
 unset -f uname
 
 # Exercise the real resolver for each platform without launching a process.

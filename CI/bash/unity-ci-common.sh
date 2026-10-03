@@ -118,11 +118,43 @@ require_import_snapshot() {
   current="$(project_fingerprint | git hash-object --stdin)"
   [[ "$current" == "$(cat "$CI_OUTPUT_DIR/ImportSnapshot.txt")" ]] || fail "Unity inputs or generated projects changed. Run scripts/unity.sh unity-import-long-compile before fast MSBuild. Full log: $CI_OUTPUT_DIR/UnityCompile.log"
 }
+# Owner liveness: the Bash pid, then the Windows pid in case the owner runs under
+# another MSYS runtime (its pids are invisible to kill -0 here).
+run_lock_owner_alive() {
+  kill -0 "$1" 2>/dev/null && return 0
+  [[ -n "${2:-}" ]] || return 1
+  ps -W 2>/dev/null | awk -v w="$2" '{ if($1 !~ /^[0-9]+$/) { $1=""; $0=$0 } if($4==w) found=1 } END { exit !found }'
+}
+# One Unity/MSBuild run per project: runs share obj/, generated projects and the
+# fixed log/result files. Concurrent callers (Codex starts one MCP server per
+# subagent) wait their turn; a lock whose owner exited (hard kill) is reclaimed.
+# Lives under Logs/ so it is neither version-controlled nor part of the snapshot.
+RUN_LOCK="$UNITY_PROJECT_PATH/Logs/kissunitymcp/run.lock"
+LEGACY_RUN_LOCK="$UNITY_PROJECT_PATH/ProjectSettings/.kissunitymcp-run.lock"
 acquire_run_lock() {
-  mkdir -p "$CI_OUTPUT_DIR"
-  RUN_LOCK="$UNITY_PROJECT_PATH/ProjectSettings/.kissunitymcp-run.lock"
-  mkdir "$RUN_LOCK" 2>/dev/null || fail "Another verification is running or left a lock: $RUN_LOCK. Check active processes before removing it."
-  trap 'rmdir "$RUN_LOCK"' EXIT
+  local waited=0 ownerless=0 pid winpid
+  mkdir -p "$CI_OUTPUT_DIR" "${RUN_LOCK%/*}"
+  [[ ! -d "$LEGACY_RUN_LOCK" ]] || fail "An older kiss-unity-mcp run is active or left a lock: $LEGACY_RUN_LOCK. Check active processes before removing it."
+  until mkdir "$RUN_LOCK" 2>/dev/null; do
+    pid=''; winpid=''
+    if ! read -r pid winpid 2>/dev/null < "$RUN_LOCK/owner" || [[ ! "$pid" =~ ^[0-9]+$ ]]; then
+      # The owner is written right after mkdir; a lasting gap means the owner died in between.
+      ownerless=$((ownerless+1))
+    elif run_lock_owner_alive "$pid" "$winpid"; then
+      ownerless=0
+    else
+      ownerless=10
+    fi
+    if (( ownerless >= 10 )); then
+      printf 'Reclaimed run lock left by exited process %s.\n' "${pid:-unknown}"
+      rm -f -- "$RUN_LOCK/owner"; rmdir -- "$RUN_LOCK" 2>/dev/null || true
+      ownerless=0; continue
+    fi
+    (( waited++ )) || printf 'Waiting for another verification of this project (owner %s): %s\n' "${pid:-unknown}" "$RUN_LOCK"
+    sleep 1
+  done
+  printf '%s %s\n' "$$" "$(cat "/proc/$$/winpid" 2>/dev/null || true)" > "$RUN_LOCK/owner"
+  trap 'rm -f -- "$RUN_LOCK/owner"; rmdir -- "$RUN_LOCK"' EXIT
 }
 # Unity leaves Temp/UnityLockfile behind when batchmode aborts (compiler errors,
 # crashes). Only a lock held by a live editor for this project blocks a run.

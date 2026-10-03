@@ -4,6 +4,17 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.7.3] - 2026-10-04
+
+- Concurrent runs on one project queue instead of failing. Codex starts one MCP
+  server per subagent, so parallel `unity_build`/`unity_tests` calls used to fail
+  with "Another verification is running"; they now wait for the run lock, keeping
+  one Unity/MSBuild per project. A lock left by a hard-killed run is reclaimed
+  from its recorded owner pid.
+- The run lock moved from `ProjectSettings/.kissunitymcp-run.lock` (version
+  controlled) to `Logs/kissunitymcp/run.lock`. A lock at the old path, held by an
+  older version, still blocks runs and setup.
+
 ## [0.7.2] - 2026-10-04
 
 - No process outlives its tool call. The MCP server watches stdin while a call

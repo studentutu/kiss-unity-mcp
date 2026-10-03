@@ -40,7 +40,9 @@ cleanup() {
 }
 trap cleanup EXIT
 if (( ! dry_run )); then
-  [[ ! -d "$PROJECT/ProjectSettings/.kissunitymcp-run.lock" ]] || fail "Verification is active: $PROJECT/ProjectSettings/.kissunitymcp-run.lock"
+  for active in "$PROJECT/Logs/kissunitymcp/run.lock" "$PROJECT/ProjectSettings/.kissunitymcp-run.lock"; do
+    [[ ! -d "$active" ]] || fail "Verification is active: $active"
+  done
   lock="$PROJECT/ProjectSettings/.kissunitymcp-setup.lock"
   if ! mkdir "$lock" 2>/dev/null; then
     # Do not remove a lock owned by another process in cleanup.

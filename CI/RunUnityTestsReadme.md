@@ -59,9 +59,12 @@ Rider version, or solution name. The exact Unity version gate also applies to
 MSBuild, but not parse-only. Headless Unity refuses a `Temp/UnityLockfile` held by
 a running editor, removes one left behind by an aborted batchmode process (and the
 one its own exited process leaves), and uses a per-project run lock
-(`ProjectSettings/.kissunitymcp-run.lock`). Parse-only does not lock, so wait
-until writers finish before inspecting artifacts. Check processes before removing
-a stale run lock.
+(`Logs/kissunitymcp/run.lock`, owner pid in `owner`). Concurrent runs on one
+project, such as Codex subagents that each start their own MCP server, wait for
+the lock instead of failing, so only one Unity/MSBuild runs per project. A lock
+whose owner exited is reclaimed; an older version's lock
+(`ProjectSettings/.kissunitymcp-run.lock`) still fails fast. Parse-only does not
+lock, so wait until writers finish before inspecting artifacts.
 
 A successful MSBuild process is a C# check only. Use Unity import to validate
 asset import, script initialization, compilation symbols and generated project
