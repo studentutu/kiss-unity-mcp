@@ -36,8 +36,10 @@ fi
 print_context "$UNITY_EDITOR_PATH"
 printf 'Solution: %s\nMSBuild: %s\nFull diagnostic log: %s\n' "$SOLUTION" "$MSBUILD" "$RIDER_LOG"
 set +e
-MSYS2_ARG_CONV_EXCL='*' "${command_args[@]}" "$SOLUTION_NATIVE" /t:Build /m /v:minimal /nologo \
-  /p:Configuration=Debug '/p:Platform=Any CPU' /fl "/flp:LogFile=$LOG_NATIVE;Verbosity=diagnostic;Encoding=UTF-8" \
+# No resident MSBuild nodes or VBCSCompiler server may outlive the call: each
+# would hold ~80-200 MB for 10-15 minutes per parallel agent.
+MSBUILDDISABLENODEREUSE=1 MSYS2_ARG_CONV_EXCL='*' "${command_args[@]}" "$SOLUTION_NATIVE" /t:Build /m /nodeReuse:false /v:minimal /nologo \
+  /p:Configuration=Debug '/p:Platform=Any CPU' /p:UseSharedCompilation=false /fl "/flp:LogFile=$LOG_NATIVE;Verbosity=diagnostic;Encoding=UTF-8" \
   2>&1 | tee "$CONSOLE_LOG"
 pipeline_status=("${PIPESTATUS[@]}")
 set -e
