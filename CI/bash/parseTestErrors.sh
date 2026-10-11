@@ -30,6 +30,24 @@ done
 
 require_command awk
 require_command sed
+
+# The NUnit parsers buffer the whole XML. A test that logs every frame grows it to
+# hundreds of MB and stalls them. Stream the cause with grep and stop.
+MAX_TEST_RESULTS_MB=40
+fail_on_oversized_results() {
+  local size_mb
+  [[ -f "$TEST_RESULTS" ]] || return 0
+  size_mb=$(( $(wc -c < "$TEST_RESULTS") / 1048576 ))
+  (( size_mb >= MAX_TEST_RESULTS_MB )) || return 0
+  printf 'ERROR: Test results are %d MB (limit %d MB): %s\n' "$size_mb" "$MAX_TEST_RESULTS_MB" "$TEST_RESULTS" >&2
+  printf 'Cause: a test floods its output, usually an exception logged every frame. The XML was not parsed.\n' >&2
+  printf 'Root: %s\n' "$(grep -m 1 -o '<test-run [^>]*' "$TEST_RESULTS" || printf 'missing')" >&2
+  printf 'First failed tests:\n' >&2
+  grep -m 5 -o '<test-case [^>]*result="Failed[^>]*' "$TEST_RESULTS" | sed -n 's/.* fullname="\([^"]*\)".*/  \1/p' >&2 || true
+  fail "Fix the flooding test, then rerun it alone with a test filter. Oversized results are never parsed."
+}
+fail_on_oversized_results
+
 require_nonempty_file "$UNITY_LOG" "Unity test log"
 extract_unity_diagnostics "$UNITY_LOG" "$DIAGNOSTICS_FILE"
 # Compiler or import errors abort Unity before any XML exists. Surface them here

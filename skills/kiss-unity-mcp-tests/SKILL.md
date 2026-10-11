@@ -40,6 +40,8 @@ tests** or **kiss-unity-mcp: Run tests by filter**.
 - Exit `1`: compile or tool failure, no tests discovered, or a filter that
   matched nothing (`No test matched the selection`). Fix the filter or code;
   a compile error is reported in the extracted diagnostics in the result.
+  `Test results are N MB (limit 40 MB)`: a listed test floods its output; fix it
+  and rerun it alone with `test_filter`.
 
 Do not open `UnityTests.log` or `CITestOutput.xml`; do not rerun with a
 handwritten Unity command. To re-read a finished run without launching Unity,
