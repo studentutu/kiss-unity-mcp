@@ -189,11 +189,16 @@ release_exited_editor_lock() {
 }
 prepare_output_file() { mkdir -p -- "$(dirname -- "$1")"; : > "$1"; }
 require_nonempty_file() { [[ -s "$1" ]] || fail "$2 missing or empty: $1"; }
+# Callers show the first 200 lines. Stop at a bounded prefix: an exception logged
+# every frame turns each line of a multi-GB log into a diagnostic.
+UNITY_DIAGNOSTICS_MAX_LINES=2000
 extract_unity_diagnostics() {
+  local recovered=0
   prepare_output_file "$2"
   [[ -f "$1" ]] || return 0
-  awk '
-    NR==FNR { if($0 ~ /Successfully (updated license|resolved entitlement details)/) licenseRecovered=1; next }
+  ! grep -qE 'Successfully (updated license|resolved entitlement details)' "$1" || recovered=1
+  awk -v licenseRecovered="$recovered" -v maxLines="$UNITY_DIAGNOSTICS_MAX_LINES" '
+    printed >= maxLines { print "... diagnostics truncated after " maxLines " lines; the log repeats errors (often one logged every frame)."; exit }
     { sub(/\r$/, ""); line=tolower($0); history[FNR%8]=$0 }
     licenseRecovered && line ~ /^\[licensing::(client|module)\] error: (handshakeresponse reported an error:|failed to handshake to channel:|access token is unavailable; failed to update)/ { next }
     # NamedPipeServer emits this closed-connection exception at warning severity.
@@ -205,11 +210,11 @@ extract_unity_diagnostics() {
     line ~ /(^|[[:space:]])(error|exception):|[a-z]+exception:|importer.*failed|import(er|ing| worker)? (failed|error):|failed to (import|load|resolve)|error (importing|loading|resolving)|asset import failed/ ||
     line ~ /unityengine.debug:log(error|exception)/ ||
     line ~ /simple_unity_mcp_ci:.*failed|## script compilation error/ {
-      for(i=FNR-7;i<FNR;i++) if(i>0) print i ": " history[i%8]
-      print FNR ": " $0; context=8; next
+      for(i=FNR-7;i<FNR;i++) if(i>0 && i>last) { print i ": " history[i%8]; printed++ }
+      print FNR ": " $0; printed++; last=FNR; context=8; next
     }
-    context>0 { print FNR ": " $0; context-- }
-  ' "$1" "$1" | awk '!seen[$0]++' > "$2"
+    context>0 { print FNR ": " $0; printed++; last=FNR; context-- }
+  ' "$1" > "$2"
 }
 print_context() {
   printf 'Unity project: %s\nConfiguration: %s\nFull logs:     %s\nUnity editor:  %s\n' "$UNITY_PROJECT_PATH" "$CONFIG_PATH" "$CI_OUTPUT_DIR" "${1:-not required}"

@@ -4,6 +4,17 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.7.5] - 2026-10-11
+
+- Test result parsing is linear. The NUnit validator and failure report re-sliced
+  the whole XML after every tag, so a 2 MB result of 2000 tests took a minute to
+  parse (as long as the Unity run). Both now stream one tag at a time with POSIX
+  awk (`nunit-summary.awk`, `nunit-failures.awk`): 60 s became 0.5 s. Failure
+  names decode XML entities, and CRLF results print the same on every platform.
+- Diagnostics extraction stops after 2000 lines and reads the Unity log once. A
+  log flooded by a per-frame exception produced a diagnostics file larger than
+  the log; a 561 MB log now takes under 2 s.
+
 ## [0.7.4] - 2026-10-11
 
 - Test parsing never stalls on flooded results. A test that logs an exception

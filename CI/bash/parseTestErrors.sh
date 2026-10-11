@@ -31,8 +31,8 @@ done
 require_command awk
 require_command sed
 
-# The NUnit parsers buffer the whole XML. A test that logs every frame grows it to
-# hundreds of MB and stalls them. Stream the cause with grep and stop.
+# The NUnit parsers stream in linear time, but a test that logs every frame grows the XML to
+# hundreds of MB. That is a defect in the test: report its cause with grep and stop.
 MAX_TEST_RESULTS_MB=40
 fail_on_oversized_results() {
   local size_mb
@@ -85,46 +85,7 @@ printf 'Test summary: result=%s total=%s passed=%s failed=%s inconclusive=%s ski
   "$result" "$total" "$passed" "$failed" "$inconclusive" "$skipped"
 
 if (( failed > 0 )) || [[ "$result" == "Failed" ]]; then
-  awk '
-    function decode(value) {
-      gsub(/<!\[CDATA\[/, "", value)
-      gsub(/\]\]>/, "", value)
-      gsub(/&lt;/, "<", value)
-      gsub(/&gt;/, ">", value)
-      gsub(/&quot;/, "\"", value)
-      gsub(/&amp;/, "\\&", value)
-      return value
-    }
-    function between(text, opening, closing, start, tail, finish) {
-      start=index(text, opening)
-      if (!start) return ""
-      tail=substr(text, start + length(opening))
-      finish=index(tail, closing)
-      return finish ? substr(tail, 1, finish - 1) : tail
-    }
-    function report_case(text, name,message,stack) {
-      if (text !~ /result="Failed"/) return
-      name="(unknown test)"
-      if (match(text, /fullname="[^"]*"/))
-        name=substr(text, RSTART + 10, RLENGTH - 11)
-      message=decode(between(text, "<message>", "</message>"))
-      stack=decode(between(text, "<stack-trace>", "</stack-trace>"))
-      printf "\n-- %s --\n%s\n%s\n", name, message, stack
-      found++
-    }
-    { document=document $0 "\n" }
-    END {
-      while (match(document, /<test-case[[:space:]]/)) {
-        document=substr(document, RSTART)
-        finish=index(document, "</test-case>")
-        if (!finish) break
-        report_case(substr(document, 1, finish-1))
-        document=substr(document, finish+12)
-      }
-      if (!found)
-        print "\nFailure details were not attached to a test-case; inspect the complete XML result."
-    }
-  ' "$TEST_RESULTS"
+  awk -f "$SCRIPT_DIR/nunit-failures.awk" "$TEST_RESULTS"
 fi
 
 status=0

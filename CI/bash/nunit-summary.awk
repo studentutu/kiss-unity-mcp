@@ -1,5 +1,10 @@
 # Validate the XML structure emitted by Unity/NUnit before trusting its summary.
 # Intentionally reject DTDs; never resolve external entities. POSIX awk.
+# Streams one record per '<': attribute values and character data never hold a
+# raw '<', so each record is one tag plus the text after it. Comments, CDATA and
+# processing instructions may span records. Linear in the file size; never
+# buffer the document and slice it per tag (quadratic: minutes on 2 MB results).
+BEGIN { RS="<" }
 function die() { failed=1; exit 1 }
 function attributes(text,root, key,q,val) {
  while(text !~ /^[ \t\r\n]*$/) {
@@ -12,50 +17,45 @@ function attributes(text,root, key,q,val) {
   q=substr(text,1,1); if(q!="\"" && q!="\047") die()
   text=substr(text,2); if(!index(text,q)) die()
   val=substr(text,1,index(text,q)-1); text=substr(text,index(text,q)+1)
-  if(val ~ /</) die()
   if(root) attr[key]=val
   if(length(text) && text !~ /^[ \t\r\n]/) die()
  }
  for(key in seenAttribute) delete seenAttribute[key]
 }
-{ xml=xml $0 "\n" }
-END {
- if(failed) exit 1
- while(length(xml)) {
-  if(substr(xml,1,1)!="<") {
-   n=index(xml,"<"); if(!n) n=length(xml)+1
-   text=substr(xml,1,n-1)
-   if(depth==0 && text !~ /^[ \t\r\n]*$/) die()
-   xml=substr(xml,n); continue
-  }
-  if(substr(xml,1,4)=="<!--") { n=index(xml,"-->"); if(!n) die(); xml=substr(xml,n+3); continue }
-  if(substr(xml,1,9)=="<![CDATA[") { if(!depth) die(); n=index(xml,"]]>"); if(!n) die(); xml=substr(xml,n+3); continue }
-  if(substr(xml,1,2)=="<?") { n=index(xml,"?>"); if(!n) die(); xml=substr(xml,n+2); continue }
-  if(substr(xml,1,2)=="<!") die()
-  q=""; n=2
-  for(;n<=length(xml);n++) {
-   c=substr(xml,n,1)
-   if(q!="") { if(c==q) q="" }
-   else if(c=="\"" || c=="\047") q=c
-   else if(c==">") break
-  }
-  if(n>length(xml) || q!="") die()
-  tag=substr(xml,2,n-2); xml=substr(xml,n+1)
-  closing=(substr(tag,1,1)=="/"); if(closing) tag=substr(tag,2)
-  empty=(tag ~ /\/$/); if(empty) tag=substr(tag,1,length(tag)-1)
-  if(!match(tag,/^[A-Za-z_:][A-Za-z0-9_.:-]*/)) die()
-  name=substr(tag,1,RLENGTH); rest=substr(tag,RLENGTH+1)
-  if(closing) {
-   if(empty || rest !~ /^[ \t\r\n]*$/ || !depth || stack[depth]!=name) die()
-   depth--; continue
-  }
+function chardata(text) { if(depth==0 && text !~ /^[ \t\r\n]*$/) die() }
+# Consume `markup` up to its terminator; the remainder is character data.
+function skip_markup(text, n) {
+ n=index(text,terminator); if(!n) return
+ chardata(substr(text,n+length(terminator))); terminator=""
+}
+NR==1 { chardata($0); next }
+terminator!="" { skip_markup($0); next }
+substr($0,1,3)=="!--" { terminator="-->"; skip_markup(substr($0,4)); next }
+substr($0,1,8)=="![CDATA[" { if(!depth) die(); terminator="]]>"; skip_markup(substr($0,9)); next }
+substr($0,1,1)=="?" { terminator="?>"; skip_markup(substr($0,2)); next }
+substr($0,1,1)=="!" { die() }
+{
+ if(!match($0,/^([^"'>]|"[^"]*"|'[^']*')*>/)) die()
+ tag=substr($0,1,RLENGTH-1); text=substr($0,RLENGTH+1)
+ closing=(substr(tag,1,1)=="/"); if(closing) tag=substr(tag,2)
+ empty=(tag ~ /\/$/); if(empty) tag=substr(tag,1,length(tag)-1)
+ if(!match(tag,/^[A-Za-z_:][A-Za-z0-9_.:-]*/)) die()
+ name=substr(tag,1,RLENGTH); rest=substr(tag,RLENGTH+1)
+ if(closing) {
+  if(empty || rest !~ /^[ \t\r\n]*$/ || !depth || stack[depth]!=name) die()
+  depth--
+ } else {
   if(rest!="" && rest !~ /^[ \t\r\n]/) die()
   if(!depth) { if(rootSeen++ || name!="test-run") die(); attributes(rest,1) }
   else attributes(rest,0)
   if(name=="test-case") cases++
   if(!empty) stack[++depth]=name
  }
- if(depth || !rootSeen) die()
+ chardata(text)
+}
+END {
+ if(failed) exit 1
+ if(terminator!="" || depth || !rootSeen) die()
  split("total passed failed inconclusive skipped",keys," ")
  for(i=1;i<=5;i++) if(attr[keys[i]] !~ /^[0-9]+$/) die()
  if(attr["total"]+0 != cases+0 || attr["total"]+0 != attr["passed"]+attr["failed"]+attr["inconclusive"]+attr["skipped"]) die()

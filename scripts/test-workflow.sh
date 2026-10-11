@@ -436,6 +436,11 @@ extract_unity_diagnostics "$work/editor.log" "$work/errors"
 printf '%s\n' "Start importing Packages/Universal/Shaders/FallbackError.shader using Guid(abc) (ShaderImporter) -> (artifact id: 'abc') in 0.01 seconds" > "$work/editor.log"
 extract_unity_diagnostics "$work/editor.log" "$work/errors"
 [[ ! -s "$work/errors" ]] || fail 'Shader filename misclassified as an import error'
+# An exception logged every frame must not turn the whole log into diagnostics.
+awk 'BEGIN { for(i=0;i<200000;i++) print "NullReferenceException: Object reference not set\n  at Boot.Update () " i }' > "$work/editor.log"
+extract_unity_diagnostics "$work/editor.log" "$work/errors"
+[[ "$(wc -l < "$work/errors")" -eq $((UNITY_DIAGNOSTICS_MAX_LINES + 1)) ]] && grep -qF 'diagnostics truncated after' "$work/errors" &&
+  grep -qxF '1: NullReferenceException: Object reference not set' "$work/errors" || fail 'Flooded log diagnostics not capped'
 
 printf '<test-run\n result="Passed" total="1" passed="1" failed="0" inconclusive="0" skipped="0"><test-suite><test-case result="Passed" /></test-suite></test-run>\n' > "$work/results.xml"
 expect_exit 0 awk -f "$root/CI/bash/nunit-summary.awk" "$work/results.xml"
@@ -455,6 +460,19 @@ sed 's/result="Passed"/result="Failed"/g;s/passed="1"/passed="0"/;s/failed="0"/f
 expect_exit 2 bash "$root/CI/bash/parseTestErrors.sh" --test-results "$work/failed.xml" --unity-log "$work/editor.log"
 sed 's/result="Failed"/result="Failed(Child)"/' "$work/failed.xml" > "$work/child-failed.xml"
 expect_exit 2 bash "$root/CI/bash/parseTestErrors.sh" --test-results "$work/child-failed.xml" --unity-log "$work/editor.log"
+printf '<test-run result="Failed" total="2" passed="1" failed="1" inconclusive="0" skipped="0">\r\n<test-case fullname="A.B(&quot;x&gt;y&quot;)" result="Failed"><failure><message><![CDATA[Expected: <1>\r\n  But was: 2]]></message><stack-trace><![CDATA[at A.B () <0x0>]]></stack-trace></failure><output><![CDATA[noise <x>]]></output></test-case>\r\n<test-case fullname="A.C" result="Passed" />\r\n</test-run>\r\n' > "$work/details.xml"
+expect_exit 2 bash "$root/CI/bash/parseTestErrors.sh" --test-results "$work/details.xml" --unity-log "$work/editor.log"
+grep -qxF -- '-- A.B("x>y") --' "$work/last.log" && grep -qxF 'Expected: <1>' "$work/last.log" &&
+  grep -qxF '  But was: 2' "$work/last.log" && grep -qxF 'at A.B () <0x0>' "$work/last.log" &&
+  ! grep -qF 'noise' "$work/last.log" || fail 'Failure details lost across CDATA, entities, or CRLF'
+# Parsing streams: 20000 cases (~2.5 MB) must stay seconds, never the old quadratic minutes.
+awk 'BEGIN { print "<test-run result=\"Passed\" total=\"20000\" passed=\"20000\" failed=\"0\" inconclusive=\"0\" skipped=\"0\"><test-suite>"
+  for(i=0;i<20000;i++) printf "<test-case id=\"%d\" fullname=\"Fixture.Test%d\" result=\"Passed\" duration=\"0.001\"><properties /><output><![CDATA[log line <%d>]]></output></test-case>\n", i, i, i
+  print "</test-suite></test-run>" }' > "$work/large.xml"
+SECONDS=0
+expect_exit 0 bash "$root/CI/bash/parseTestErrors.sh" --test-results "$work/large.xml" --unity-log "$work/editor.log"
+(( SECONDS < 30 )) || fail "Parsing 20000 test cases took ${SECONDS}s; the NUnit parsers must stream"
+rm "$work/large.xml"
 # A per-frame exception flood must fail fast with its cause, never reach the awk parsers.
 { printf '<test-run result="Failed" total="1">\n<test-case fullname="Flood.Fixture.Test" result="Failed">\n'
   head -c 41943040 /dev/zero | tr '\0' 'x'; } > "$work/oversized.xml"
