@@ -52,6 +52,9 @@ archived pair. Keep `UNITY_DIAGNOSTICS_PATH` distinct from both inputs. Exit `0`
 validates the supplied artifacts only, `1` means invalid/missing evidence or
 infrastructure failure, and `2` means failed/inconclusive tests or rejected skips.
 The original run's process status and freshness must be verified separately.
+Results of 40 MB or more are never parsed: a test that logs every frame floods
+them and stalls the in-memory NUnit parsers. They exit `1` with the size, the root
+`<test-run>` counts and the first failed test names, streamed with `grep`.
 
 Tool paths are selected in `<project>/.kissunitymcp/tools.env`, with environment
 overrides taking precedence. No path is hard-coded to a particular editor version,

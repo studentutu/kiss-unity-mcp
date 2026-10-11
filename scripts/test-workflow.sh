@@ -455,6 +455,12 @@ sed 's/result="Passed"/result="Failed"/g;s/passed="1"/passed="0"/;s/failed="0"/f
 expect_exit 2 bash "$root/CI/bash/parseTestErrors.sh" --test-results "$work/failed.xml" --unity-log "$work/editor.log"
 sed 's/result="Failed"/result="Failed(Child)"/' "$work/failed.xml" > "$work/child-failed.xml"
 expect_exit 2 bash "$root/CI/bash/parseTestErrors.sh" --test-results "$work/child-failed.xml" --unity-log "$work/editor.log"
+# A per-frame exception flood must fail fast with its cause, never reach the awk parsers.
+{ printf '<test-run result="Failed" total="1">\n<test-case fullname="Flood.Fixture.Test" result="Failed">\n'
+  head -c 41943040 /dev/zero | tr '\0' 'x'; } > "$work/oversized.xml"
+expect_exit 1 bash "$root/CI/bash/parseTestErrors.sh" --test-results "$work/oversized.xml" --unity-log "$work/editor.log"
+grep -qF 'Test results are 40 MB (limit 40 MB)' "$work/last.log" && grep -qF '  Flood.Fixture.Test' "$work/last.log" || fail 'Oversized results missed the fast-fail cause'
+rm "$work/oversized.xml"
 
 # Execute the actual manual task definitions, substituting VS Code variables as
 # data. No eval, installed editor, or test execution is involved.

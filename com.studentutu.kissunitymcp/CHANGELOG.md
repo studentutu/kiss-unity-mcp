@@ -4,6 +4,14 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.7.4] - 2026-10-11
+
+- Test parsing never stalls on flooded results. A test that logs an exception
+  every frame grew `CITestOutput.xml` to hundreds of MB, and the in-memory NUnit
+  parsers ran past the 30-min tool timeout after Unity had finished. Results of
+  40 MB or more now fail fast with exit `1`, the size, the root `<test-run>`
+  counts and the first failed test names, streamed with `grep`.
+
 ## [0.7.3] - 2026-10-04
 
 - Concurrent runs on one project queue instead of failing. Codex starts one MCP
